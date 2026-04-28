@@ -1,0 +1,804 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Job Search Agent — Steps 1 & 2</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap');
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0e0e11;
+    --bg2: #16161a;
+    --bg3: #1e1e24;
+    --border: rgba(255,255,255,0.08);
+    --border2: rgba(255,255,255,0.14);
+    --text: #f0f0f0;
+    --muted: #888;
+    --accent: #6ee7b7;
+    --accent2: #818cf8;
+    --warn: #fbbf24;
+    --danger: #f87171;
+    --mono: 'DM Mono', monospace;
+    --sans: 'DM Sans', sans-serif;
+    --radius: 8px;
+    --radius-lg: 12px;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 14px;
+    min-height: 100vh;
+  }
+
+  .app { max-width: 960px; margin: 0 auto; padding: 32px 24px; }
+
+  .header {
+    display: flex; align-items: center; gap: 14px;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 24px; margin-bottom: 28px;
+  }
+  .logo {
+    width: 36px; height: 36px; border-radius: 10px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; flex-shrink: 0;
+  }
+  .header h1 { font-size: 20px; font-weight: 600; letter-spacing: -0.4px; }
+  .header p { font-size: 12px; color: var(--muted); margin-top: 3px; }
+
+  .tabs {
+    display: flex; gap: 4px;
+    background: var(--bg2); border-radius: var(--radius);
+    padding: 4px; margin-bottom: 28px;
+    border: 1px solid var(--border);
+  }
+  .tab {
+    flex: 1; padding: 9px 14px; border-radius: 6px;
+    border: none; background: transparent; color: var(--muted);
+    font-family: var(--sans); font-size: 13px; font-weight: 500;
+    cursor: pointer; transition: all 0.15s;
+  }
+  .tab.active { background: var(--bg3); color: var(--text); border: 1px solid var(--border2); }
+  .tab:not(.active):hover { color: var(--text); }
+
+  .section { margin-bottom: 22px; }
+  .section-label {
+    font-size: 11px; font-weight: 500; letter-spacing: 0.8px;
+    text-transform: uppercase; color: var(--muted); margin-bottom: 8px;
+  }
+
+  .card {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); padding: 18px;
+  }
+
+  .input-row { display: flex; gap: 8px; margin-bottom: 10px; }
+  .input-row:last-child { margin-bottom: 0; }
+
+  input[type=text], input[type=password] {
+    background: var(--bg3); border: 1px solid var(--border);
+    border-radius: var(--radius); color: var(--text);
+    font-family: var(--mono); font-size: 12px;
+    padding: 9px 12px; width: 100%;
+    transition: border 0.15s;
+  }
+  input[type=text]:focus, input[type=password]:focus {
+    outline: none; border-color: var(--accent2);
+  }
+  input::placeholder { color: var(--muted); }
+
+  .upload-zone {
+    border: 1px dashed var(--border2); border-radius: var(--radius);
+    padding: 24px; text-align: center; cursor: pointer;
+    transition: all 0.15s; position: relative; overflow: hidden;
+  }
+  .upload-zone:hover { border-color: var(--accent); background: rgba(110,231,183,0.04); }
+  .upload-zone.done { border-color: var(--accent); background: rgba(110,231,183,0.06); }
+  .upload-zone input[type=file] {
+    position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
+  }
+  .upload-icon { font-size: 26px; margin-bottom: 8px; }
+  .upload-label { font-size: 13px; color: var(--muted); }
+  .upload-done { color: var(--accent); font-weight: 500; font-size: 13px; }
+
+  .btn {
+    background: var(--accent); color: #0e0e11;
+    border: none; border-radius: var(--radius);
+    font-family: var(--sans); font-size: 13px; font-weight: 600;
+    padding: 10px 22px; cursor: pointer;
+    transition: all 0.15s; white-space: nowrap;
+  }
+  .btn:hover { opacity: 0.88; }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn-sm { padding: 7px 14px; font-size: 12px; }
+  .btn-ghost {
+    background: transparent; color: var(--text);
+    border: 1px solid var(--border2);
+  }
+  .btn-ghost:hover { background: var(--bg3); }
+  .btn-purple { background: var(--accent2); color: #fff; }
+  .btn-full { width: 100%; }
+
+  .status-bar {
+    background: var(--bg3); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 11px 14px;
+    font-family: var(--mono); font-size: 11px; color: var(--muted);
+    min-height: 40px; display: flex; align-items: center; gap: 8px;
+  }
+  .dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--muted); flex-shrink: 0;
+  }
+  .dot.green { background: var(--accent); }
+  .dot.amber { background: var(--warn); animation: pulse 1s infinite; }
+  .dot.red { background: var(--danger); }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+  .jobs-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+  .jobs-table th {
+    font-size: 10px; font-weight: 500; letter-spacing: 0.6px;
+    text-transform: uppercase; color: var(--muted);
+    padding: 10px 12px; text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+  .jobs-table td {
+    padding: 10px 12px; border-bottom: 1px solid var(--border);
+    font-size: 12px; vertical-align: top; overflow: hidden; text-overflow: ellipsis;
+  }
+  .jobs-table tr:last-child td { border-bottom: none; }
+  .jobs-table tr:hover td { background: rgba(255,255,255,0.02); }
+
+  .col-num  { width: 36px; }
+  .col-role { width: 200px; }
+  .col-loc  { width: 120px; }
+  .col-sal  { width: 90px; }
+  .col-src  { width: 80px; }
+  .col-date { width: 90px; }
+  .col-scr  { width: 70px; }
+  .col-act  { width: 70px; }
+
+  .badge {
+    display: inline-block; padding: 2px 7px;
+    border-radius: 4px; font-size: 10px; font-weight: 500;
+  }
+  .badge-adzuna { background: rgba(110,231,183,0.15); color: var(--accent); }
+  .badge-jsearch { background: rgba(129,140,248,0.15); color: var(--accent2); }
+  .badge-both { background: rgba(251,191,36,0.15); color: var(--warn); }
+
+  .score-pill {
+    display: inline-flex; align-items: center;
+    padding: 3px 8px; border-radius: 4px; font-family: var(--mono);
+    font-size: 11px; font-weight: 500;
+  }
+  .score-high { background: rgba(110,231,183,0.15); color: var(--accent); }
+  .score-mid  { background: rgba(251,191,36,0.15); color: var(--warn); }
+  .score-low  { background: rgba(248,113,113,0.15); color: var(--danger); }
+
+  .analysis-block {
+    background: var(--bg); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 16px;
+    margin-top: 6px; font-size: 12px; line-height: 1.75;
+  }
+  .analysis-block h4 {
+    font-size: 10px; font-weight: 600; letter-spacing: 0.6px;
+    text-transform: uppercase; color: var(--muted); margin-bottom: 6px; margin-top: 12px;
+  }
+  .analysis-block h4:first-child { margin-top: 0; }
+  .analysis-block p { color: var(--text); }
+  .tag {
+    display: inline-block; background: var(--bg3); border: 1px solid var(--border);
+    border-radius: 4px; padding: 2px 7px; font-family: var(--mono);
+    font-size: 10px; color: var(--muted); margin: 2px 3px 2px 0;
+  }
+
+  .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+
+  .stat-card {
+    background: var(--bg3); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 14px 16px;
+  }
+  .stat-card .val { font-size: 26px; font-weight: 600; color: var(--accent); font-family: var(--mono); }
+  .stat-card .lbl { font-size: 11px; color: var(--muted); margin-top: 3px; }
+
+  .empty-state {
+    text-align: center; padding: 60px 20px; color: var(--muted);
+  }
+  .empty-state .icon { font-size: 36px; margin-bottom: 12px; }
+  .empty-state p { font-size: 13px; }
+
+  .progress-bar {
+    height: 3px; background: var(--bg3); border-radius: 2px; overflow: hidden; margin-bottom: 14px;
+  }
+  .progress-fill {
+    height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent2));
+    border-radius: 2px; transition: width 0.4s;
+  }
+
+  .row { display: flex; gap: 10px; align-items: flex-start; }
+  .row .grow { flex: 1; }
+
+  .keyword-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+  .chip {
+    background: var(--bg3); border: 1px solid var(--border);
+    border-radius: 4px; padding: 5px 10px; font-size: 11px;
+    color: var(--text); display: flex; align-items: center; gap: 6px;
+  }
+  .chip .remove { color: var(--muted); cursor: pointer; font-size: 14px; line-height: 1; }
+  .chip .remove:hover { color: var(--danger); }
+
+  .toggle-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 0; border-bottom: 1px solid var(--border);
+  }
+  .toggle-row:last-child { border-bottom: none; }
+  .toggle-label { font-size: 13px; color: var(--text); }
+  .toggle-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .toggle {
+    width: 34px; height: 20px; border-radius: 10px;
+    background: var(--bg3); border: 1px solid var(--border2);
+    position: relative; cursor: pointer; transition: background 0.2s; flex-shrink: 0;
+  }
+  .toggle.on { background: var(--accent); border-color: var(--accent); }
+  .toggle-knob {
+    position: absolute; top: 3px; left: 3px;
+    width: 12px; height: 12px; border-radius: 50%;
+    background: var(--muted); transition: all 0.2s;
+  }
+  .toggle.on .toggle-knob { left: 17px; background: #0e0e11; }
+
+  .export-row { display: flex; gap: 8px; justify-content: flex-end; margin-bottom: 16px; }
+
+  .phase-log {
+    font-family: var(--mono); font-size: 11px; color: var(--muted);
+    line-height: 2; max-height: 200px; overflow-y: auto; margin-top: 10px;
+  }
+
+  .job-title { font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .job-company { font-size: 11px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  a { color: var(--accent2); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  .hidden { display: none !important; }
+  .mt16 { margin-top: 16px; }
+  .hint { font-size: 11px; color: var(--muted); margin-top: 8px; line-height: 1.6; }
+
+  .keys-hint {
+    background: rgba(129,140,248,0.08); border: 1px solid rgba(129,140,248,0.2);
+    border-radius: var(--radius); padding: 14px; margin-bottom: 18px; font-size: 12px; line-height: 1.8;
+  }
+  .keys-hint strong { color: var(--accent2); }
+  .keys-hint a { color: var(--accent2); }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="header">
+    <div class="logo">⚡</div>
+    <div>
+      <h1>Job Search Agent</h1>
+      <p>Steps 1 & 2 — Discovery + CV Analysis &nbsp;·&nbsp; by sairamvedireswarapu</p>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="showTab('config')">⚙ Config</button>
+    <button class="tab" onclick="showTab('search')">🔍 Search</button>
+    <button class="tab" onclick="showTab('results')">📋 Results</button>
+  </div>
+
+  <!-- ═══════════════════════════════ CONFIG TAB ═══════════════════════════════ -->
+  <div id="tab-config">
+
+    <div class="keys-hint">
+      <strong>Free API keys needed:</strong><br>
+      • <strong>Anthropic</strong> → <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a> (free credits on signup)<br>
+      • <strong>Adzuna</strong> → <a href="https://developer.adzuna.com" target="_blank">developer.adzuna.com</a> (free, 250 calls/month)<br>
+      • <strong>RapidAPI / JSearch</strong> → <a href="https://rapidapi.com/letscrape-6bRBa3QguO5/api/jsearch" target="_blank">rapidapi.com → JSearch → Basic (Free)</a>
+    </div>
+
+    <div class="section">
+      <div class="section-label">API Keys</div>
+      <div class="card">
+        <div class="input-row">
+          <input type="password" id="anthropic-key" placeholder="Anthropic API key  (sk-ant-...)" />
+        </div>
+        <div class="input-row">
+          <input type="text" id="adzuna-id" placeholder="Adzuna App ID" style="width:50%" />
+          <input type="password" id="adzuna-key" placeholder="Adzuna App Key" style="width:50%" />
+        </div>
+        <div class="input-row">
+          <input type="password" id="rapidapi-key" placeholder="RapidAPI Key  (JSearch)" />
+        </div>
+        <div class="input-row" style="justify-content:flex-end">
+          <button class="btn btn-sm" onclick="saveConfig()">Save Keys</button>
+        </div>
+        <div id="config-saved" class="hidden" style="color:var(--accent);font-size:12px;margin-top:6px">✓ Keys saved for this session</div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-label">Your CV (.docx)</div>
+      <div class="card">
+        <div class="upload-zone" id="cv-zone">
+          <input type="file" id="cv-file" accept=".docx" onchange="loadCV(this)" />
+          <div class="upload-icon">📄</div>
+          <div id="cv-label" class="upload-label">Drop your .docx CV here or click to browse</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-label">Search Keywords</div>
+      <div class="card">
+        <div class="row">
+          <input type="text" id="kw-input" placeholder="e.g. Python Developer, LangGraph AI Engineer…" class="grow"
+            onkeydown="if(event.key==='Enter')addKeyword()" />
+          <button class="btn btn-sm" onclick="addKeyword()">Add</button>
+        </div>
+        <div class="keyword-chips" id="kw-chips"></div>
+        <div class="hint">First 5 keywords used for search. Adzuna searches US, GB, IN, AU, CA. JSearch is global.</div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-label">Search Options</div>
+      <div class="card">
+        <div class="toggle-row">
+          <div>
+            <div class="toggle-label">Search Adzuna</div>
+            <div class="toggle-sub">5 countries × keywords</div>
+          </div>
+          <div class="toggle on" id="tog-adzuna" onclick="toggleOpt(this)"><div class="toggle-knob"></div></div>
+        </div>
+        <div class="toggle-row">
+          <div>
+            <div class="toggle-label">Search JSearch (RapidAPI)</div>
+            <div class="toggle-sub">Global LinkedIn / Indeed scrape</div>
+          </div>
+          <div class="toggle on" id="tog-jsearch" onclick="toggleOpt(this)"><div class="toggle-knob"></div></div>
+        </div>
+        <div class="toggle-row">
+          <div>
+            <div class="toggle-label">Auto-analyze all results with Claude</div>
+            <div class="toggle-sub">Step 2 — runs after search completes</div>
+          </div>
+          <div class="toggle on" id="tog-auto-analyze" onclick="toggleOpt(this)"><div class="toggle-knob"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <button class="btn btn-full" onclick="startSearch()">Start Job Search →</button>
+  </div>
+
+  <!-- ═══════════════════════════════ SEARCH TAB ═══════════════════════════════ -->
+  <div id="tab-search" class="hidden">
+    <div class="section">
+      <div class="section-label">Progress</div>
+      <div class="card">
+        <div class="progress-bar"><div class="progress-fill" id="prog-bar" style="width:0%"></div></div>
+        <div class="status-bar">
+          <div class="dot" id="status-dot"></div>
+          <span id="status-text">Ready to search</span>
+        </div>
+        <div class="phase-log" id="phase-log"></div>
+      </div>
+    </div>
+    <div class="grid3 mt16">
+      <div class="stat-card"><div class="val" id="stat-total">0</div><div class="lbl">Jobs found</div></div>
+      <div class="stat-card"><div class="val" id="stat-analyzed">0</div><div class="lbl">Analyzed</div></div>
+      <div class="stat-card"><div class="val" id="stat-high">0</div><div class="lbl">High match (≥70)</div></div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════ RESULTS TAB ═══════════════════════════════ -->
+  <div id="tab-results" class="hidden">
+    <div class="export-row">
+      <button class="btn btn-ghost btn-sm" onclick="exportCSV()">↓ Export CSV</button>
+      <button class="btn btn-sm btn-purple" onclick="reanalyzeAll()">⟳ Re-analyze all</button>
+    </div>
+    <div id="results-container">
+      <div class="empty-state">
+        <div class="icon">🔍</div>
+        <p>Run a search from the Config tab to see results here</p>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+let state = { cvText: '', keywords: [], jobs: [], analyses: {}, config: {} };
+
+function showTab(t) {
+  ['config','search','results'].forEach((id,i) => {
+    document.getElementById('tab-'+id).classList.toggle('hidden', id !== t);
+    document.querySelectorAll('.tab')[i].classList.toggle('active', id === t);
+  });
+}
+
+function saveConfig() {
+  state.config = {
+    anthropicKey: document.getElementById('anthropic-key').value.trim(),
+    adzunaId:     document.getElementById('adzuna-id').value.trim(),
+    adzunaKey:    document.getElementById('adzuna-key').value.trim(),
+    rapidApiKey:  document.getElementById('rapidapi-key').value.trim()
+  };
+  document.getElementById('config-saved').classList.remove('hidden');
+}
+
+async function loadCV(input) {
+  const file = input.files[0];
+  if (!file) return;
+  try {
+    const buf = await file.arrayBuffer();
+    const result = await mammoth.extractRawText({ arrayBuffer: buf });
+    state.cvText = result.value;
+    document.getElementById('cv-zone').classList.add('done');
+    document.getElementById('cv-label').innerHTML =
+      `<span class="upload-done">✓ ${file.name} loaded (${state.cvText.length.toLocaleString()} chars)</span>`;
+  } catch(e) {
+    document.getElementById('cv-label').textContent = 'Error: ' + e.message;
+  }
+}
+
+function addKeyword() {
+  const inp = document.getElementById('kw-input');
+  const val = inp.value.trim();
+  if (!val || state.keywords.includes(val)) { inp.value = ''; return; }
+  state.keywords.push(val);
+  inp.value = '';
+  renderChips();
+}
+
+function removeKeyword(kw) {
+  state.keywords = state.keywords.filter(k => k !== kw);
+  renderChips();
+}
+
+function renderChips() {
+  document.getElementById('kw-chips').innerHTML = state.keywords.map(k =>
+    `<div class="chip">${esc(k)}<span class="remove" onclick="removeKeyword(${JSON.stringify(k)})">×</span></div>`
+  ).join('');
+}
+
+function toggleOpt(el) { el.classList.toggle('on'); }
+function isOn(id) { return document.getElementById(id).classList.contains('on'); }
+
+function setStatus(color, text) {
+  document.getElementById('status-dot').className = 'dot ' + color;
+  document.getElementById('status-text').textContent = text;
+}
+
+function addLog(msg) {
+  const log = document.getElementById('phase-log');
+  log.innerHTML += `<div>&gt; ${esc(msg)}</div>`;
+  log.scrollTop = log.scrollHeight;
+}
+
+function setProgress(pct) {
+  document.getElementById('prog-bar').style.width = Math.min(100, pct) + '%';
+}
+
+function updateStats() {
+  document.getElementById('stat-total').textContent = state.jobs.length;
+  const done = Object.keys(state.analyses).length;
+  document.getElementById('stat-analyzed').textContent = done;
+  const high = Object.values(state.analyses).filter(a => a.score >= 70).length;
+  document.getElementById('stat-high').textContent = high;
+}
+
+async function startSearch() {
+  const config = {
+    anthropicKey: document.getElementById('anthropic-key').value.trim(),
+    adzunaId:     document.getElementById('adzuna-id').value.trim(),
+    adzunaKey:    document.getElementById('adzuna-key').value.trim(),
+    rapidApiKey:  document.getElementById('rapidapi-key').value.trim()
+  };
+  if (!state.keywords.length) { alert('Add at least one keyword first.'); return; }
+
+  showTab('search');
+  state.jobs = [];
+  state.analyses = {};
+  document.getElementById('phase-log').innerHTML = '';
+  setProgress(0);
+  updateStats();
+
+  const useAdzuna    = isOn('tog-adzuna');
+  const useJSearch   = isOn('tog-jsearch');
+  const autoAnalyze  = isOn('tog-auto-analyze');
+  const keywords     = state.keywords.slice(0, 5);
+
+  setStatus('amber', 'Discovering jobs…');
+  addLog('Starting discovery — ' + keywords.length + ' keywords');
+
+  const allJobs = [];
+
+  // ── ADZUNA ──
+  if (useAdzuna && config.adzunaId && config.adzunaKey) {
+    const countries = ['us','gb','in','au','ca'];
+    let done = 0;
+    const total = keywords.length * countries.length;
+    for (const kw of keywords) {
+      for (const cc of countries) {
+        addLog(`Adzuna [${cc.toUpperCase()}] → "${kw}"`);
+        try {
+          const url = `https://api.adzuna.com/v1/api/jobs/${cc}/search/1?app_id=${config.adzunaId}&app_key=${config.adzunaKey}&what=${encodeURIComponent(kw)}&results_per_page=10`;
+          const res = await fetch(url);
+          if (res.ok) {
+            const data = await res.json();
+            (data.results || []).forEach(j => allJobs.push({
+              id: btoa(j.redirect_url || j.id || Math.random()).replace(/[^a-z0-9]/gi,'').slice(0,16),
+              title:   j.title || '',
+              company: (j.company && j.company.display_name) || '',
+              location:(j.location && j.location.display_name) || '',
+              salary:  j.salary_min ? `${Math.round(j.salary_min/1000)}k–${Math.round((j.salary_max||j.salary_min)/1000)}k` : '',
+              source:  'adzuna',
+              posted:  j.created ? j.created.split('T')[0] : '',
+              url:     j.redirect_url || '',
+              jd:      j.description || ''
+            }));
+          }
+        } catch(e) { addLog(`  ⚠ Adzuna error: ${e.message}`); }
+        done++;
+        setProgress(Math.round((done/total)*35));
+      }
+    }
+  } else if (useAdzuna) {
+    addLog('⚠ Adzuna skipped — missing App ID or App Key');
+  }
+
+  // ── JSEARCH ──
+  if (useJSearch && config.rapidApiKey) {
+    let done = 0;
+    for (const kw of keywords) {
+      addLog(`JSearch → "${kw}"`);
+      try {
+        const url = `https://jsearch.p.rapidapi.com/search?query=${encodeURIComponent(kw)}&num_pages=1&page=1`;
+        const res = await fetch(url, {
+          headers: { 'X-RapidAPI-Key': config.rapidApiKey, 'X-RapidAPI-Host': 'jsearch.p.rapidapi.com' }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          (data.data || []).forEach(j => allJobs.push({
+            id: btoa(j.job_apply_link || j.job_id || Math.random()).replace(/[^a-z0-9]/gi,'').slice(0,16),
+            title:   j.job_title || '',
+            company: j.employer_name || '',
+            location:[j.job_city, j.job_country].filter(Boolean).join(', '),
+            salary:  j.job_min_salary ? `${Math.round(j.job_min_salary/1000)}k–${Math.round((j.job_max_salary||j.job_min_salary)/1000)}k` : '',
+            source:  'jsearch',
+            posted:  j.job_posted_at_datetime_utc ? j.job_posted_at_datetime_utc.split('T')[0] : '',
+            url:     j.job_apply_link || '',
+            jd:      j.job_description || ''
+          }));
+        }
+      } catch(e) { addLog(`  ⚠ JSearch error: ${e.message}`); }
+      done++;
+      setProgress(35 + Math.round((done/keywords.length)*25));
+    }
+  } else if (useJSearch) {
+    addLog('⚠ JSearch skipped — missing RapidAPI key');
+  }
+
+  // ── DEDUP ──
+  setProgress(62);
+  addLog(`Raw jobs collected: ${allJobs.length}`);
+  const seen = new Map();
+  for (const j of allJobs) {
+    const key = (j.title + '|' + j.company).toLowerCase().replace(/\s/g,'');
+    if (!seen.has(key)) { seen.set(key, j); }
+    else if (seen.get(key).source !== j.source) { seen.get(key).source = 'both'; }
+  }
+  state.jobs = Array.from(seen.values());
+  addLog(`After dedup: ${state.jobs.length} unique jobs`);
+  updateStats();
+  renderResults();
+
+  // ── AUTO ANALYZE ──
+  if (autoAnalyze && config.anthropicKey && state.cvText && state.jobs.length > 0) {
+    setStatus('amber', 'Analyzing with Claude…');
+    addLog(`Step 2 — analyzing ${state.jobs.length} jobs with Claude`);
+    for (let i = 0; i < state.jobs.length; i++) {
+      const job = state.jobs[i];
+      addLog(`[${i+1}/${state.jobs.length}] ${job.title} @ ${job.company}`);
+      try {
+        state.analyses[job.id] = await analyzeJob(job, config.anthropicKey);
+        updateStats();
+        renderResults();
+      } catch(e) { addLog(`  ⚠ ${e.message}`); }
+      setProgress(62 + Math.round(((i+1)/state.jobs.length)*36));
+    }
+    addLog('✓ Analysis complete');
+  } else if (autoAnalyze && !config.anthropicKey) {
+    addLog('⚠ Auto-analyze skipped — no Anthropic key');
+  } else if (autoAnalyze && !state.cvText) {
+    addLog('⚠ Auto-analyze skipped — no CV uploaded');
+  }
+
+  setProgress(100);
+  setStatus('green', `Done — ${state.jobs.length} jobs, ${Object.keys(state.analyses).length} analyzed`);
+  showTab('results');
+}
+
+async function analyzeJob(job, key) {
+  const prompt = `You are a career coach. Analyze this job against the candidate's CV.
+
+CV (first 3000 chars):
+${state.cvText.slice(0, 3000)}
+
+Job: ${job.title} at ${job.company}
+JD: ${(job.jd||'').slice(0, 2000)}
+
+Reply ONLY with valid JSON, no markdown fences:
+{
+  "score": <integer 0-100>,
+  "summary": "<one sentence fit summary>",
+  "missing_keywords": ["kw1","kw2","kw3"],
+  "skill_gaps": ["gap1","gap2"],
+  "bullet_before": "<existing CV bullet to improve>",
+  "bullet_after": "<rewritten stronger bullet>"
+}`;
+
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': key,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true'
+    },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 800,
+      messages: [{ role: 'user', content: prompt }]
+    })
+  });
+
+  if (!res.ok) { const e = await res.json(); throw new Error(e.error?.message || res.statusText); }
+  const data = await res.json();
+  const text = data.content[0].text.trim().replace(/^```json?|```$/g,'').trim();
+  return JSON.parse(text);
+}
+
+function renderResults() {
+  const container = document.getElementById('results-container');
+  if (!state.jobs.length) {
+    container.innerHTML = '<div class="empty-state"><div class="icon">🔍</div><p>No jobs found yet</p></div>';
+    return;
+  }
+  const sorted = [...state.jobs].sort((a,b) => (state.analyses[b.id]?.score||0) - (state.analyses[a.id]?.score||0));
+
+  let html = `<table class="jobs-table"><colgroup>
+    <col class="col-num"><col class="col-role"><col class="col-loc">
+    <col class="col-sal"><col class="col-src"><col class="col-date">
+    <col class="col-scr"><col class="col-act">
+  </colgroup><thead><tr>
+    <th>#</th><th>Role</th><th>Location</th><th>Salary</th>
+    <th>Source</th><th>Posted</th><th>Score</th><th>Apply</th>
+  </tr></thead><tbody>`;
+
+  sorted.forEach((job, idx) => {
+    const a = state.analyses[job.id];
+    const scoreHtml = a
+      ? `<span class="score-pill ${a.score>=70?'score-high':a.score>=45?'score-mid':'score-low'}">${a.score}</span>`
+      : `<span style="color:var(--muted);font-size:11px">—</span>`;
+    const src = job.source === 'both'
+      ? `<span class="badge badge-both">Both</span>`
+      : job.source === 'adzuna'
+        ? `<span class="badge badge-adzuna">Adzuna</span>`
+        : `<span class="badge badge-jsearch">JSearch</span>`;
+
+    html += `<tr onclick="toggleAnalysis('${job.id}')" style="cursor:pointer">
+      <td style="color:var(--muted);font-size:11px">${idx+1}</td>
+      <td><div class="job-title" title="${esc(job.title)}">${esc(job.title)}</div>
+          <div class="job-company" title="${esc(job.company)}">${esc(job.company)}</div></td>
+      <td style="color:var(--muted);font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(job.location)}</td>
+      <td style="font-family:var(--mono);font-size:11px;color:var(--accent)">${job.salary||'—'}</td>
+      <td>${src}</td>
+      <td style="font-family:var(--mono);font-size:10px;color:var(--muted)">${job.posted||'—'}</td>
+      <td>${scoreHtml}</td>
+      <td>${job.url ? `<a href="${esc(job.url)}" target="_blank" onclick="event.stopPropagation()">Apply ↗</a>` : '—'}</td>
+    </tr>`;
+
+    html += `<tr id="analysis-${job.id}" class="hidden"><td colspan="8">`;
+    if (a) {
+      html += `<div class="analysis-block">
+        <h4>Summary</h4><p>${esc(a.summary)}</p>
+        ${a.missing_keywords?.length ? `<h4>Missing Keywords</h4><p>${a.missing_keywords.map(k=>`<span class="tag">${esc(k)}</span>`).join('')}</p>` : ''}
+        ${a.skill_gaps?.length ? `<h4>Skill Gaps</h4><p>${a.skill_gaps.map(k=>`<span class="tag">${esc(k)}</span>`).join('')}</p>` : ''}
+        ${a.bullet_before ? `<h4>Bullet Rewrite</h4>
+          <p style="color:var(--muted);text-decoration:line-through">${esc(a.bullet_before)}</p>
+          <p style="color:var(--accent)">→ ${esc(a.bullet_after)}</p>` : ''}
+      </div>`;
+    } else {
+      html += `<div class="analysis-block" style="text-align:center;color:var(--muted)">
+        No analysis yet.
+        <button class="btn btn-sm btn-purple" style="margin-left:10px"
+          onclick="event.stopPropagation();analyzeSingle('${job.id}')">Analyze now</button>
+      </div>`;
+    }
+    html += `</td></tr>`;
+  });
+
+  html += '</tbody></table>';
+  container.innerHTML = html;
+}
+
+function toggleAnalysis(id) {
+  const row = document.getElementById('analysis-'+id);
+  if (row) row.classList.toggle('hidden');
+}
+
+async function analyzeSingle(jobId) {
+  const key = document.getElementById('anthropic-key').value.trim();
+  if (!key) { alert('Add your Anthropic API key in Config tab first.'); return; }
+  if (!state.cvText) { alert('Upload your CV in Config tab first.'); return; }
+  const job = state.jobs.find(j => j.id === jobId);
+  if (!job) return;
+  try {
+    state.analyses[jobId] = await analyzeJob(job, key);
+    updateStats();
+    renderResults();
+    setTimeout(() => { const r = document.getElementById('analysis-'+jobId); if(r) r.classList.remove('hidden'); }, 60);
+  } catch(e) { alert('Analysis error: ' + e.message); }
+}
+
+async function reanalyzeAll() {
+  const key = document.getElementById('anthropic-key').value.trim();
+  if (!key) { alert('Add your Anthropic API key in Config tab first.'); return; }
+  if (!state.cvText) { alert('Upload your CV in Config tab first.'); return; }
+  if (!state.jobs.length) { alert('Run a search first.'); return; }
+  showTab('search');
+  document.getElementById('phase-log').innerHTML = '';
+  setStatus('amber', 'Re-analyzing all jobs…');
+  for (let i = 0; i < state.jobs.length; i++) {
+    const job = state.jobs[i];
+    addLog(`[${i+1}/${state.jobs.length}] ${job.title} @ ${job.company}`);
+    try {
+      state.analyses[job.id] = await analyzeJob(job, key);
+      updateStats();
+    } catch(e) { addLog(`⚠ ${e.message}`); }
+    setProgress(Math.round(((i+1)/state.jobs.length)*100));
+  }
+  setStatus('green', 'Re-analysis complete');
+  renderResults();
+  showTab('results');
+}
+
+function exportCSV() {
+  if (!state.jobs.length) { alert('No jobs to export yet.'); return; }
+  const headers = ['#','Title','Company','Location','Salary','Source','Posted','Apply URL','Score','Summary','Missing Keywords','Skill Gaps'];
+  const rows = state.jobs.map((j,i) => {
+    const a = state.analyses[j.id];
+    return [i+1, j.title, j.company, j.location, j.salary, j.source, j.posted, j.url,
+      a?.score ?? '', a?.summary ?? '',
+      a?.missing_keywords?.join('; ') ?? '',
+      a?.skill_gaps?.join('; ') ?? ''
+    ].map(v => `"${String(v).replace(/"/g,'""')}"`).join(',');
+  });
+  const csv = [headers.join(','), ...rows].join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'job-search-results.csv';
+  a.click(); URL.revokeObjectURL(url);
+}
+
+function esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// Default keywords
+['Python Developer','Backend Engineer','LangGraph AI Engineer','FastAPI Developer','Machine Learning Engineer']
+  .forEach(k => state.keywords.push(k));
+renderChips();
+</script>
+</body>
+</html>
