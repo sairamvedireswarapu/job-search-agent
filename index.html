@@ -220,17 +220,25 @@
     border-radius: 2px; transition: width 0.4s;
   }
 
-  .row { display: flex; gap: 10px; align-items: flex-start; }
-  .row .grow { flex: 1; }
-
-  .keyword-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
-  .chip {
-    background: var(--bg3); border: 1px solid var(--border);
-    border-radius: 4px; padding: 5px 10px; font-size: 11px;
-    color: var(--text); display: flex; align-items: center; gap: 6px;
+  /* FIX: added margin-bottom so chips don't jam against the input row */
+  .kw-input-row {
+    display: flex; gap: 8px; align-items: center; margin-bottom: 10px;
   }
-  .chip .remove { color: var(--muted); cursor: pointer; font-size: 14px; line-height: 1; }
-  .chip .remove:hover { color: var(--danger); }
+  .kw-input-row .grow { flex: 1; }
+
+  .keyword-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+  .chip {
+    background: var(--bg3); border: 1px solid var(--border2);
+    border-radius: 4px; padding: 5px 10px; font-size: 11px;
+    color: var(--text); display: inline-flex; align-items: center; gap: 6px;
+    user-select: none;
+  }
+  /* FIX: bigger click target and clearer hover for remove button */
+  .chip .remove {
+    color: var(--muted); cursor: pointer; font-size: 16px; line-height: 1;
+    padding: 0 2px; border-radius: 3px; transition: color 0.1s, background 0.1s;
+  }
+  .chip .remove:hover { color: var(--danger); background: rgba(248,113,113,0.12); }
 
   .toggle-row {
     display: flex; align-items: center; justify-content: space-between;
@@ -280,6 +288,10 @@
     border-radius: 4px; padding: 1px 6px; font-size: 10px; font-weight: 600;
     margin-left: 6px; vertical-align: middle;
   }
+  .input-row { display: flex; gap: 8px; margin-bottom: 10px; }
+  .input-row:last-child { margin-bottom: 0; }
+  .row { display: flex; gap: 10px; align-items: flex-start; }
+  .row .grow { flex: 1; }
 </style>
 </head>
 <body>
@@ -289,7 +301,7 @@
     <div class="logo">⚡</div>
     <div>
       <h1>Job Search Agent</h1>
-      <p>Steps 1 & 2 — Discovery + CV Analysis &nbsp;·&nbsp; Powered by Gemini 1.5 Flash (Free)</p>
+      <p>Steps 1 & 2 — Discovery + CV Analysis &nbsp;·&nbsp; Powered by Grok</p>
     </div>
   </div>
 
@@ -303,8 +315,8 @@
   <div id="tab-config">
 
     <div class="keys-hint">
-      <strong>All free API keys — no credit card needed:</strong><br>
-      • <strong>Google Gemini</strong> <span class="free-badge">FREE · 1500 req/day</span> → <a href="https://aistudio.google.com/app/apikey" target="_blank">aistudio.google.com/app/apikey</a> — sign in with Google, click "Create API Key"<br>
+      <strong>API keys needed:</strong><br>
+      • <strong>Grok (xAI)</strong> <span class="free-badge">FREE $25 credits/month</span> → <a href="https://console.x.ai/" target="_blank">console.x.ai</a> — sign in, go to API Keys, click "Create API Key"<br>
       • <strong>Adzuna</strong> <span class="free-badge">FREE · 250 calls/month</span> → <a href="https://developer.adzuna.com" target="_blank">developer.adzuna.com</a><br>
       • <strong>RapidAPI / JSearch</strong> <span class="free-badge">FREE tier</span> → <a href="https://rapidapi.com/letscrape-6bRBa3QguO5/api/jsearch" target="_blank">rapidapi.com → JSearch → Subscribe Free</a>
     </div>
@@ -313,7 +325,7 @@
       <div class="section-label">API Keys</div>
       <div class="card">
         <div class="input-row">
-          <input type="password" id="gemini-key" placeholder="Google Gemini API key  (AIza...)" />
+          <input type="password" id="grok-key" placeholder="Grok API key  (xai-...)" />
         </div>
         <div class="input-row">
           <input type="text" id="adzuna-id" placeholder="Adzuna App ID" style="width:50%" />
@@ -343,13 +355,14 @@
     <div class="section">
       <div class="section-label">Search Keywords</div>
       <div class="card">
-        <div class="row">
+        <!-- FIX: use dedicated kw-input-row class with proper margin -->
+        <div class="kw-input-row">
           <input type="text" id="kw-input" placeholder="e.g. Python Developer, LangGraph AI Engineer…" class="grow"
             onkeydown="if(event.key==='Enter')addKeyword()" />
           <button class="btn btn-sm" onclick="addKeyword()">Add</button>
         </div>
         <div class="keyword-chips" id="kw-chips"></div>
-        <div class="hint">First 5 keywords used for search. Adzuna searches US, GB, IN, AU, CA. JSearch is global.</div>
+        <div class="hint">Separate multiple keywords with commas. First 5 used for search. Adzuna searches US, GB, IN, AU, CA. JSearch is global.</div>
       </div>
     </div>
 
@@ -372,7 +385,7 @@
         </div>
         <div class="toggle-row">
           <div>
-            <div class="toggle-label">Auto-analyze all results with Gemini</div>
+            <div class="toggle-label">Auto-analyze all results with Grok</div>
             <div class="toggle-sub">Step 2 — CV match scoring + bullet rewrites</div>
           </div>
           <div class="toggle on" id="tog-auto-analyze" onclick="toggleOpt(this)"><div class="toggle-knob"></div></div>
@@ -431,7 +444,7 @@ function showTab(t) {
 
 function saveConfig() {
   state.config = {
-    geminiKey:   document.getElementById('gemini-key').value.trim(),
+    grokKey:     document.getElementById('grok-key').value.trim(),
     adzunaId:    document.getElementById('adzuna-id').value.trim(),
     adzunaKey:   document.getElementById('adzuna-key').value.trim(),
     rapidApiKey: document.getElementById('rapidapi-key').value.trim()
@@ -454,24 +467,47 @@ async function loadCV(input) {
   }
 }
 
+// ── KEYWORD FUNCTIONS ──
+
+// FIX: support comma-separated input
 function addKeyword() {
   const inp = document.getElementById('kw-input');
-  const val = inp.value.trim();
-  if (!val || state.keywords.includes(val)) { inp.value = ''; return; }
-  state.keywords.push(val);
+  const parts = inp.value.split(',').map(v => v.trim()).filter(Boolean);
+  let added = false;
+  parts.forEach(val => {
+    if (val && !state.keywords.includes(val)) {
+      state.keywords.push(val);
+      added = true;
+    }
+  });
   inp.value = '';
-  renderChips();
+  if (added) renderChips();
 }
 
-function removeKeyword(kw) {
+// FIX: use data-kw attribute instead of inline JSON.stringify to avoid
+//      double-quote collision inside the onclick HTML attribute
+function removeKeyword(el) {
+  const kw = el.getAttribute('data-kw');
   state.keywords = state.keywords.filter(k => k !== kw);
   renderChips();
 }
 
 function renderChips() {
-  document.getElementById('kw-chips').innerHTML = state.keywords.map(k =>
-    `<div class="chip">${esc(k)}<span class="remove" onclick="removeKeyword(${JSON.stringify(k)})">×</span></div>`
-  ).join('');
+  const container = document.getElementById('kw-chips');
+  container.innerHTML = '';
+  state.keywords.forEach(k => {
+    const chip = document.createElement('div');
+    chip.className = 'chip';
+    chip.innerHTML = `${esc(k)}`;
+    const rm = document.createElement('span');
+    rm.className = 'remove';
+    rm.textContent = '×';
+    rm.title = 'Remove';
+    rm.setAttribute('data-kw', k);
+    rm.addEventListener('click', function() { removeKeyword(this); });
+    chip.appendChild(rm);
+    container.appendChild(chip);
+  });
 }
 
 function toggleOpt(el) { el.classList.toggle('on'); }
@@ -502,7 +538,7 @@ function updateStats() {
 
 async function startSearch() {
   const config = {
-    geminiKey:   document.getElementById('gemini-key').value.trim(),
+    grokKey:     document.getElementById('grok-key').value.trim(),
     adzunaId:    document.getElementById('adzuna-id').value.trim(),
     adzunaKey:   document.getElementById('adzuna-key').value.trim(),
     rapidApiKey: document.getElementById('rapidapi-key').value.trim()
@@ -606,25 +642,24 @@ async function startSearch() {
   updateStats();
   renderResults();
 
-  // ── AUTO ANALYZE WITH GEMINI ──
-  if (autoAnalyze && config.geminiKey && state.cvText && state.jobs.length > 0) {
-    setStatus('amber', 'Analyzing with Gemini 1.5 Flash…');
-    addLog(`Step 2 — analyzing ${state.jobs.length} jobs with Gemini`);
+  // ── AUTO ANALYZE WITH GROK ──
+  if (autoAnalyze && config.grokKey && state.cvText && state.jobs.length > 0) {
+    setStatus('amber', 'Analyzing with Grok…');
+    addLog(`Step 2 — analyzing ${state.jobs.length} jobs with Grok`);
     for (let i = 0; i < state.jobs.length; i++) {
       const job = state.jobs[i];
       addLog(`[${i+1}/${state.jobs.length}] ${job.title} @ ${job.company}`);
       try {
-        state.analyses[job.id] = await analyzeJob(job, config.geminiKey);
+        state.analyses[job.id] = await analyzeJob(job, config.grokKey);
         updateStats();
         renderResults();
       } catch(e) { addLog(`  ⚠ ${e.message}`); }
-      // Small delay to stay within free rate limits (15 req/min on free tier)
-      await new Promise(r => setTimeout(r, 500));
+      await new Promise(r => setTimeout(r, 300));
       setProgress(62 + Math.round(((i+1)/state.jobs.length)*36));
     }
     addLog('✓ Analysis complete');
-  } else if (autoAnalyze && !config.geminiKey) {
-    addLog('⚠ Auto-analyze skipped — no Gemini API key');
+  } else if (autoAnalyze && !config.grokKey) {
+    addLog('⚠ Auto-analyze skipped — no Grok API key');
   } else if (autoAnalyze && !state.cvText) {
     addLog('⚠ Auto-analyze skipped — no CV uploaded');
   }
@@ -634,8 +669,8 @@ async function startSearch() {
   showTab('results');
 }
 
-// ── GEMINI API CALL ──
-async function analyzeJob(job, geminiKey) {
+// ── GROK API CALL (replaces Gemini) ──
+async function analyzeJob(job, grokKey) {
   const prompt = `You are a career coach. Analyze this job against the candidate's CV and respond ONLY with valid JSON — no markdown, no explanation, no code fences.
 
 CV (first 3000 chars):
@@ -655,27 +690,27 @@ Respond with exactly this JSON structure:
   "bullet_after": "<rewrite that bullet to better match this job>"
 }`;
 
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiKey}`;
-
-  const res = await fetch(url, {
+  const res = await fetch('https://api.x.ai/v1/chat/completions', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${grokKey}`
+    },
     body: JSON.stringify({
-      contents: [{ parts: [{ text: prompt }] }],
-      generationConfig: {
-        temperature: 0.3,
-        maxOutputTokens: 800
-      }
+      model: 'grok-3-mini',
+      messages: [{ role: 'user', content: prompt }],
+      temperature: 0.3,
+      max_tokens: 800
     })
   });
 
   if (!res.ok) {
-    const e = await res.json();
-    throw new Error(e.error?.message || `Gemini API error ${res.status}`);
+    const e = await res.json().catch(() => ({}));
+    throw new Error(e.error?.message || `Grok API error ${res.status}`);
   }
 
   const data = await res.json();
-  const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+  const rawText = data.choices?.[0]?.message?.content || '';
   // Strip any accidental markdown fences
   const clean = rawText.trim().replace(/^```json?|```$/gm, '').trim();
   return JSON.parse(clean);
@@ -751,8 +786,8 @@ function toggleAnalysis(id) {
 }
 
 async function analyzeSingle(jobId) {
-  const key = document.getElementById('gemini-key').value.trim();
-  if (!key) { alert('Add your Gemini API key in Config tab first.'); return; }
+  const key = document.getElementById('grok-key').value.trim();
+  if (!key) { alert('Add your Grok API key in Config tab first.'); return; }
   if (!state.cvText) { alert('Upload your CV in Config tab first.'); return; }
   const job = state.jobs.find(j => j.id === jobId);
   if (!job) return;
@@ -765,13 +800,13 @@ async function analyzeSingle(jobId) {
 }
 
 async function reanalyzeAll() {
-  const key = document.getElementById('gemini-key').value.trim();
-  if (!key) { alert('Add your Gemini API key in Config tab first.'); return; }
+  const key = document.getElementById('grok-key').value.trim();
+  if (!key) { alert('Add your Grok API key in Config tab first.'); return; }
   if (!state.cvText) { alert('Upload your CV in Config tab first.'); return; }
   if (!state.jobs.length) { alert('Run a search first.'); return; }
   showTab('search');
   document.getElementById('phase-log').innerHTML = '';
-  setStatus('amber', 'Re-analyzing all jobs with Gemini…');
+  setStatus('amber', 'Re-analyzing all jobs with Grok…');
   for (let i = 0; i < state.jobs.length; i++) {
     const job = state.jobs[i];
     addLog(`[${i+1}/${state.jobs.length}] ${job.title} @ ${job.company}`);
@@ -779,7 +814,7 @@ async function reanalyzeAll() {
       state.analyses[job.id] = await analyzeJob(job, key);
       updateStats();
     } catch(e) { addLog(`⚠ ${e.message}`); }
-    await new Promise(r => setTimeout(r, 500));
+    await new Promise(r => setTimeout(r, 300));
     setProgress(Math.round(((i+1)/state.jobs.length)*100));
   }
   setStatus('green', 'Re-analysis complete');
@@ -810,7 +845,7 @@ function esc(s) {
   return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
-// Default keywords
+// Default keywords — rendered safely via DOM (not innerHTML)
 ['Python Developer','Backend Engineer','LangGraph AI Engineer','FastAPI Developer','Machine Learning Engineer']
   .forEach(k => state.keywords.push(k));
 renderChips();
