@@ -270,11 +270,16 @@
   .hint { font-size: 11px; color: var(--muted); margin-top: 8px; line-height: 1.6; }
 
   .keys-hint {
-    background: rgba(129,140,248,0.08); border: 1px solid rgba(129,140,248,0.2);
+    background: rgba(110,231,183,0.06); border: 1px solid rgba(110,231,183,0.2);
     border-radius: var(--radius); padding: 14px; margin-bottom: 18px; font-size: 12px; line-height: 1.8;
   }
-  .keys-hint strong { color: var(--accent2); }
-  .keys-hint a { color: var(--accent2); }
+  .keys-hint strong { color: var(--accent); }
+  .keys-hint a { color: var(--accent); }
+  .free-badge {
+    display: inline-block; background: rgba(110,231,183,0.15); color: var(--accent);
+    border-radius: 4px; padding: 1px 6px; font-size: 10px; font-weight: 600;
+    margin-left: 6px; vertical-align: middle;
+  }
 </style>
 </head>
 <body>
@@ -284,7 +289,7 @@
     <div class="logo">⚡</div>
     <div>
       <h1>Job Search Agent</h1>
-      <p>Steps 1 & 2 — Discovery + CV Analysis &nbsp;·&nbsp; by sairamvedireswarapu</p>
+      <p>Steps 1 & 2 — Discovery + CV Analysis &nbsp;·&nbsp; Powered by Gemini 1.5 Flash (Free)</p>
     </div>
   </div>
 
@@ -298,17 +303,17 @@
   <div id="tab-config">
 
     <div class="keys-hint">
-      <strong>Free API keys needed:</strong><br>
-      • <strong>Anthropic</strong> → <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a> (free credits on signup)<br>
-      • <strong>Adzuna</strong> → <a href="https://developer.adzuna.com" target="_blank">developer.adzuna.com</a> (free, 250 calls/month)<br>
-      • <strong>RapidAPI / JSearch</strong> → <a href="https://rapidapi.com/letscrape-6bRBa3QguO5/api/jsearch" target="_blank">rapidapi.com → JSearch → Basic (Free)</a>
+      <strong>All free API keys — no credit card needed:</strong><br>
+      • <strong>Google Gemini</strong> <span class="free-badge">FREE · 1500 req/day</span> → <a href="https://aistudio.google.com/app/apikey" target="_blank">aistudio.google.com/app/apikey</a> — sign in with Google, click "Create API Key"<br>
+      • <strong>Adzuna</strong> <span class="free-badge">FREE · 250 calls/month</span> → <a href="https://developer.adzuna.com" target="_blank">developer.adzuna.com</a><br>
+      • <strong>RapidAPI / JSearch</strong> <span class="free-badge">FREE tier</span> → <a href="https://rapidapi.com/letscrape-6bRBa3QguO5/api/jsearch" target="_blank">rapidapi.com → JSearch → Subscribe Free</a>
     </div>
 
     <div class="section">
       <div class="section-label">API Keys</div>
       <div class="card">
         <div class="input-row">
-          <input type="password" id="anthropic-key" placeholder="Anthropic API key  (sk-ant-...)" />
+          <input type="password" id="gemini-key" placeholder="Google Gemini API key  (AIza...)" />
         </div>
         <div class="input-row">
           <input type="text" id="adzuna-id" placeholder="Adzuna App ID" style="width:50%" />
@@ -367,8 +372,8 @@
         </div>
         <div class="toggle-row">
           <div>
-            <div class="toggle-label">Auto-analyze all results with Claude</div>
-            <div class="toggle-sub">Step 2 — runs after search completes</div>
+            <div class="toggle-label">Auto-analyze all results with Gemini</div>
+            <div class="toggle-sub">Step 2 — CV match scoring + bullet rewrites</div>
           </div>
           <div class="toggle on" id="tog-auto-analyze" onclick="toggleOpt(this)"><div class="toggle-knob"></div></div>
         </div>
@@ -426,10 +431,10 @@ function showTab(t) {
 
 function saveConfig() {
   state.config = {
-    anthropicKey: document.getElementById('anthropic-key').value.trim(),
-    adzunaId:     document.getElementById('adzuna-id').value.trim(),
-    adzunaKey:    document.getElementById('adzuna-key').value.trim(),
-    rapidApiKey:  document.getElementById('rapidapi-key').value.trim()
+    geminiKey:   document.getElementById('gemini-key').value.trim(),
+    adzunaId:    document.getElementById('adzuna-id').value.trim(),
+    adzunaKey:   document.getElementById('adzuna-key').value.trim(),
+    rapidApiKey: document.getElementById('rapidapi-key').value.trim()
   };
   document.getElementById('config-saved').classList.remove('hidden');
 }
@@ -497,10 +502,10 @@ function updateStats() {
 
 async function startSearch() {
   const config = {
-    anthropicKey: document.getElementById('anthropic-key').value.trim(),
-    adzunaId:     document.getElementById('adzuna-id').value.trim(),
-    adzunaKey:    document.getElementById('adzuna-key').value.trim(),
-    rapidApiKey:  document.getElementById('rapidapi-key').value.trim()
+    geminiKey:   document.getElementById('gemini-key').value.trim(),
+    adzunaId:    document.getElementById('adzuna-id').value.trim(),
+    adzunaKey:   document.getElementById('adzuna-key').value.trim(),
+    rapidApiKey: document.getElementById('rapidapi-key').value.trim()
   };
   if (!state.keywords.length) { alert('Add at least one keyword first.'); return; }
 
@@ -511,10 +516,10 @@ async function startSearch() {
   setProgress(0);
   updateStats();
 
-  const useAdzuna    = isOn('tog-adzuna');
-  const useJSearch   = isOn('tog-jsearch');
-  const autoAnalyze  = isOn('tog-auto-analyze');
-  const keywords     = state.keywords.slice(0, 5);
+  const useAdzuna   = isOn('tog-adzuna');
+  const useJSearch  = isOn('tog-jsearch');
+  const autoAnalyze = isOn('tog-auto-analyze');
+  const keywords    = state.keywords.slice(0, 5);
 
   setStatus('amber', 'Discovering jobs…');
   addLog('Starting discovery — ' + keywords.length + ' keywords');
@@ -601,23 +606,25 @@ async function startSearch() {
   updateStats();
   renderResults();
 
-  // ── AUTO ANALYZE ──
-  if (autoAnalyze && config.anthropicKey && state.cvText && state.jobs.length > 0) {
-    setStatus('amber', 'Analyzing with Claude…');
-    addLog(`Step 2 — analyzing ${state.jobs.length} jobs with Claude`);
+  // ── AUTO ANALYZE WITH GEMINI ──
+  if (autoAnalyze && config.geminiKey && state.cvText && state.jobs.length > 0) {
+    setStatus('amber', 'Analyzing with Gemini 1.5 Flash…');
+    addLog(`Step 2 — analyzing ${state.jobs.length} jobs with Gemini`);
     for (let i = 0; i < state.jobs.length; i++) {
       const job = state.jobs[i];
       addLog(`[${i+1}/${state.jobs.length}] ${job.title} @ ${job.company}`);
       try {
-        state.analyses[job.id] = await analyzeJob(job, config.anthropicKey);
+        state.analyses[job.id] = await analyzeJob(job, config.geminiKey);
         updateStats();
         renderResults();
       } catch(e) { addLog(`  ⚠ ${e.message}`); }
+      // Small delay to stay within free rate limits (15 req/min on free tier)
+      await new Promise(r => setTimeout(r, 500));
       setProgress(62 + Math.round(((i+1)/state.jobs.length)*36));
     }
     addLog('✓ Analysis complete');
-  } else if (autoAnalyze && !config.anthropicKey) {
-    addLog('⚠ Auto-analyze skipped — no Anthropic key');
+  } else if (autoAnalyze && !config.geminiKey) {
+    addLog('⚠ Auto-analyze skipped — no Gemini API key');
   } else if (autoAnalyze && !state.cvText) {
     addLog('⚠ Auto-analyze skipped — no CV uploaded');
   }
@@ -627,44 +634,51 @@ async function startSearch() {
   showTab('results');
 }
 
-async function analyzeJob(job, key) {
-  const prompt = `You are a career coach. Analyze this job against the candidate's CV.
+// ── GEMINI API CALL ──
+async function analyzeJob(job, geminiKey) {
+  const prompt = `You are a career coach. Analyze this job against the candidate's CV and respond ONLY with valid JSON — no markdown, no explanation, no code fences.
 
 CV (first 3000 chars):
 ${state.cvText.slice(0, 3000)}
 
-Job: ${job.title} at ${job.company}
-JD: ${(job.jd||'').slice(0, 2000)}
+Job Title: ${job.title}
+Company: ${job.company}
+Job Description: ${(job.jd || '').slice(0, 2000)}
 
-Reply ONLY with valid JSON, no markdown fences:
+Respond with exactly this JSON structure:
 {
-  "score": <integer 0-100>,
-  "summary": "<one sentence fit summary>",
-  "missing_keywords": ["kw1","kw2","kw3"],
-  "skill_gaps": ["gap1","gap2"],
-  "bullet_before": "<existing CV bullet to improve>",
-  "bullet_after": "<rewritten stronger bullet>"
+  "score": <integer 0-100 representing how well the CV matches this job>,
+  "summary": "<one sentence describing the fit>",
+  "missing_keywords": ["keyword1", "keyword2", "keyword3"],
+  "skill_gaps": ["gap1", "gap2"],
+  "bullet_before": "<pick one existing CV bullet that could be stronger>",
+  "bullet_after": "<rewrite that bullet to better match this job>"
 }`;
 
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiKey}`;
+
+  const res = await fetch(url, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': key,
-      'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true'
-    },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 800,
-      messages: [{ role: 'user', content: prompt }]
+      contents: [{ parts: [{ text: prompt }] }],
+      generationConfig: {
+        temperature: 0.3,
+        maxOutputTokens: 800
+      }
     })
   });
 
-  if (!res.ok) { const e = await res.json(); throw new Error(e.error?.message || res.statusText); }
+  if (!res.ok) {
+    const e = await res.json();
+    throw new Error(e.error?.message || `Gemini API error ${res.status}`);
+  }
+
   const data = await res.json();
-  const text = data.content[0].text.trim().replace(/^```json?|```$/g,'').trim();
-  return JSON.parse(text);
+  const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+  // Strip any accidental markdown fences
+  const clean = rawText.trim().replace(/^```json?|```$/gm, '').trim();
+  return JSON.parse(clean);
 }
 
 function renderResults() {
@@ -737,8 +751,8 @@ function toggleAnalysis(id) {
 }
 
 async function analyzeSingle(jobId) {
-  const key = document.getElementById('anthropic-key').value.trim();
-  if (!key) { alert('Add your Anthropic API key in Config tab first.'); return; }
+  const key = document.getElementById('gemini-key').value.trim();
+  if (!key) { alert('Add your Gemini API key in Config tab first.'); return; }
   if (!state.cvText) { alert('Upload your CV in Config tab first.'); return; }
   const job = state.jobs.find(j => j.id === jobId);
   if (!job) return;
@@ -751,13 +765,13 @@ async function analyzeSingle(jobId) {
 }
 
 async function reanalyzeAll() {
-  const key = document.getElementById('anthropic-key').value.trim();
-  if (!key) { alert('Add your Anthropic API key in Config tab first.'); return; }
+  const key = document.getElementById('gemini-key').value.trim();
+  if (!key) { alert('Add your Gemini API key in Config tab first.'); return; }
   if (!state.cvText) { alert('Upload your CV in Config tab first.'); return; }
   if (!state.jobs.length) { alert('Run a search first.'); return; }
   showTab('search');
   document.getElementById('phase-log').innerHTML = '';
-  setStatus('amber', 'Re-analyzing all jobs…');
+  setStatus('amber', 'Re-analyzing all jobs with Gemini…');
   for (let i = 0; i < state.jobs.length; i++) {
     const job = state.jobs[i];
     addLog(`[${i+1}/${state.jobs.length}] ${job.title} @ ${job.company}`);
@@ -765,6 +779,7 @@ async function reanalyzeAll() {
       state.analyses[job.id] = await analyzeJob(job, key);
       updateStats();
     } catch(e) { addLog(`⚠ ${e.message}`); }
+    await new Promise(r => setTimeout(r, 500));
     setProgress(Math.round(((i+1)/state.jobs.length)*100));
   }
   setStatus('green', 'Re-analysis complete');
