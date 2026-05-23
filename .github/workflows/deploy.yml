@@ -86,7 +86,7 @@ jobs:
         with:
           service: ${{ env.SERVICE }}
           region: ${{ env.REGION }}
-          image: ${{ needs.build-push.outputs.image }}
+          image: gcr.io/${{ secrets.GCP_PROJECT_ID }}/job-search-agent:latest
           flags: |
             --min-instances=0
             --max-instances=10
