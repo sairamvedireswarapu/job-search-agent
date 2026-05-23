@@ -22,6 +22,5 @@ class Settings(BaseSettings):
     SIGNED_URL_EXPIRY_MINUTES: int = 15
 
 
-@lru_cache
 def get_settings() -> Settings:
     return Settings()
