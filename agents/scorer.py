@@ -130,7 +130,7 @@ async def score_jobs(
     cv_text: str,
     keywords: list,
     gemini_key: str = "",
-    grok_key: str = "",
+    groq_key: str = "",
     anthropic_key: str = "",
     model: str = "flash",
     min_score: int = 40,
@@ -143,18 +143,18 @@ async def score_jobs(
 
    
 
-    # if grok_key:
+    # if groq_key:
     #     from openai import OpenAI
     #     provider = "Grok"
     #     model_id = "grok-3-mini" if model == "flash" else "grok-3"
-    #     client = OpenAI(api_key=grok_key, base_url="https://api.x.ai/v1")
+    #     client = OpenAI(api_key=groq_key, base_url="https://api.x.ai/v1")
     #     tasks = [_score_batch_grok(client, b, cv_text, keywords, model_id) for b in batches]
     
-    if grok_key:
+    if groq_key:
         from openai import OpenAI
         provider = "Groq"
         model_id = "llama-3.3-70b-versatile" if model == "flash" else "llama-3.3-70b-versatile"
-        client = OpenAI(api_key=grok_key, base_url="https://api.groq.com/openai/v1")
+        client = OpenAI(api_key=groq_key, base_url="https://api.groq.com/openai/v1")
         tasks = [_score_batch_grok(client, b, cv_text, keywords, model_id) for b in batches]
     
     elif gemini_key:
