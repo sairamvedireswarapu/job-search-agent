@@ -60,7 +60,7 @@ async def _get_user_api_keys(user_id: str) -> dict:
         return {}
     raw = doc.to_dict()
     keys = {}
-    for field in ["jsearch_key", "adzuna_app_id", "adzuna_api_key", "gemini_key", "grok_key", "anthropic_key"]:
+    for field in ["jsearch_key", "adzuna_app_id", "adzuna_api_key", "gemini_key", "groq_key", "anthropic_key"]:
         if raw.get(field):
             try:
                 keys[field] = _decrypt(raw[field])
@@ -151,7 +151,7 @@ class ApiKeysPayload(BaseModel):
     adzuna_app_id: Optional[str] = None
     adzuna_api_key: Optional[str] = None
     gemini_key: Optional[str] = None
-    grok_key: Optional[str] = None
+    groq_key: Optional[str] = None
     anthropic_key: Optional[str] = None
 
 
@@ -232,7 +232,7 @@ async def trigger_run(payload: RunPayload, user: dict = Depends(get_current_user
         raise HTTPException(400, "Please upload your CV before running a search")
 
     api_keys = await _get_user_api_keys(user["user_id"])
-    if not any([api_keys.get("gemini_key"), api_keys.get("grok_key"), api_keys.get("anthropic_key")]):
+    if not any([api_keys.get("gemini_key"), api_keys.get("groq_key"), api_keys.get("anthropic_key")]):
         raise HTTPException(400, "At least one AI key required (Gemini, Grok, or Anthropic)")
 
     run_id = uuid.uuid4().hex[:12]
