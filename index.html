@@ -1,0 +1,1177 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Job Search Agent</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link
+    href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Syne:wght@400;600;700;800&display=swap"
+    rel="stylesheet">
+  <style>
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --bg: #0a0c0f;
+      --surface: #111419;
+      --border: #1e232c;
+      --border2: #2a3040;
+      --text: #e8eaf0;
+      --muted: #6b7280;
+      --accent: #3b82f6;
+      --accent2: #60a5fa;
+      --green: #22c55e;
+      --amber: #f59e0b;
+      --red: #ef4444;
+      --mono: 'IBM Plex Mono', monospace;
+      --sans: 'Syne', sans-serif;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      font-family: var(--sans);
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      line-height: 1.6;
+    }
+
+    /* ── Utility ─────────────────────────────── */
+    .hidden {
+      display: none !important;
+    }
+
+    .mono {
+      font-family: var(--mono);
+    }
+
+    .muted {
+      color: var(--muted);
+    }
+
+    .green {
+      color: var(--green);
+    }
+
+    .amber {
+      color: var(--amber);
+    }
+
+    .red {
+      color: var(--red);
+    }
+
+    button {
+      cursor: pointer;
+      border: none;
+      font-family: var(--sans);
+      font-weight: 600;
+      letter-spacing: .03em;
+      border-radius: 6px;
+      transition: all .15s ease;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #fff;
+      padding: 10px 22px;
+      font-size: .875rem;
+    }
+
+    .btn-primary:hover {
+      background: var(--accent2);
+      transform: translateY(-1px);
+    }
+
+    .btn-primary:disabled {
+      opacity: .45;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .btn-ghost {
+      background: transparent;
+      border: 1px solid var(--border2);
+      color: var(--text);
+      padding: 9px 18px;
+      font-size: .8rem;
+    }
+
+    .btn-ghost:hover {
+      border-color: var(--accent);
+      color: var(--accent2);
+    }
+
+    input,
+    textarea,
+    select {
+      font-family: var(--mono);
+      font-size: .83rem;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 6px;
+      padding: 9px 12px;
+      width: 100%;
+      outline: none;
+      transition: border-color .15s;
+    }
+
+    input:focus,
+    textarea:focus,
+    select:focus {
+      border-color: var(--accent);
+    }
+
+    label {
+      font-size: .78rem;
+      font-weight: 600;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      color: var(--muted);
+      display: block;
+      margin-bottom: 5px;
+    }
+
+    /* ── Layout ──────────────────────────────── */
+    #app {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 0 24px 80px;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 28px 0 24px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 36px;
+    }
+
+    .logo {
+      font-size: 1.1rem;
+      font-weight: 800;
+      letter-spacing: -.01em;
+      color: var(--text);
+    }
+
+    .logo span {
+      color: var(--accent);
+    }
+
+    #user-pill {
+      font-size: .75rem;
+      font-family: var(--mono);
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    #logout-btn {
+      font-size: .72rem;
+      padding: 4px 10px;
+    }
+
+    /* ── Card ────────────────────────────────── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 28px 30px;
+      margin-bottom: 20px;
+    }
+
+    .card-title {
+      font-size: .95rem;
+      font-weight: 700;
+      letter-spacing: .02em;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .card-title .dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--accent);
+      display: inline-block;
+    }
+
+    /* ── Grid ────────────────────────────────── */
+    .grid2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    .field {
+      margin-bottom: 14px;
+    }
+
+    /* ── Tag input ───────────────────────────── */
+    .tag-wrap {
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 6px 8px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      min-height: 42px;
+      cursor: text;
+      transition: border-color .15s;
+    }
+
+    .tag-wrap:focus-within {
+      border-color: var(--accent);
+    }
+
+    .tag {
+      background: #1a2235;
+      border: 1px solid var(--border2);
+      color: var(--accent2);
+      border-radius: 4px;
+      padding: 2px 8px;
+      font-size: .78rem;
+      font-family: var(--mono);
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .tag button {
+      background: none;
+      color: var(--muted);
+      font-size: .9rem;
+      padding: 0;
+      border-radius: 0;
+    }
+
+    .tag button:hover {
+      color: var(--red);
+    }
+
+    .tag-input {
+      border: none;
+      background: transparent;
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: .83rem;
+      padding: 2px 4px;
+      flex: 1;
+      min-width: 120px;
+      outline: none;
+    }
+
+    .tag-hint {
+      font-size: .72rem;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+
+    /* ── Multi-select pills ──────────────────── */
+    .pill-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+    }
+
+    .pill {
+      border: 1px solid var(--border2);
+      border-radius: 20px;
+      padding: 5px 14px;
+      font-size: .78rem;
+      font-family: var(--mono);
+      color: var(--muted);
+      cursor: pointer;
+      transition: all .12s;
+      background: transparent;
+    }
+
+    .pill.active {
+      border-color: var(--accent);
+      color: var(--accent2);
+      background: #1a2235;
+    }
+
+    /* ── Collapsible ─────────────────────────── */
+    .collapsible-trigger {
+      font-size: .8rem;
+      color: var(--muted);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 14px;
+      font-weight: 600;
+      letter-spacing: .05em;
+      text-transform: uppercase;
+      background: none;
+      border: none;
+      font-family: var(--sans);
+      padding: 0;
+    }
+
+    .collapsible-trigger:hover {
+      color: var(--accent2);
+    }
+
+    .collapsible-trigger .arrow {
+      transition: transform .2s;
+      display: inline-block;
+    }
+
+    .collapsible-trigger.open .arrow {
+      transform: rotate(90deg);
+    }
+
+    .collapsible-body {
+      display: none;
+    }
+
+    .collapsible-body.open {
+      display: block;
+    }
+
+    /* ── Status bar ──────────────────────────── */
+    #status-bar {
+      border: 1px solid var(--border2);
+      border-radius: 8px;
+      padding: 18px 22px;
+      margin-bottom: 20px;
+      font-family: var(--mono);
+      font-size: .82rem;
+    }
+
+    .status-steps {
+      display: flex;
+      gap: 0;
+      margin-top: 14px;
+    }
+
+    .step {
+      flex: 1;
+      text-align: center;
+      font-size: .7rem;
+      padding: 6px 4px;
+      color: var(--muted);
+      border-top: 2px solid var(--border2);
+      transition: all .3s;
+    }
+
+    .step.active {
+      color: var(--accent2);
+      border-top-color: var(--accent);
+    }
+
+    .step.done {
+      color: var(--green);
+      border-top-color: var(--green);
+    }
+
+    /* ── Results ─────────────────────────────── */
+    .stats-row {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+
+    .stat {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px 18px;
+      flex: 1;
+      min-width: 100px;
+    }
+
+    .stat-num {
+      font-size: 1.5rem;
+      font-weight: 800;
+      color: var(--accent2);
+    }
+
+    .stat-label {
+      font-size: .72rem;
+      color: var(--muted);
+      letter-spacing: .05em;
+      text-transform: uppercase;
+    }
+
+    .download-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--green);
+      color: #000;
+      padding: 11px 24px;
+      border-radius: 7px;
+      font-weight: 700;
+      font-size: .875rem;
+      text-decoration: none;
+      transition: all .15s;
+    }
+
+    .download-btn:hover {
+      background: #4ade80;
+      transform: translateY(-1px);
+    }
+
+    /* ── Past runs ───────────────────────────── */
+    .run-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: .82rem;
+    }
+
+    .run-row:last-child {
+      border-bottom: none;
+    }
+
+    .run-badge {
+      font-size: .68rem;
+      font-family: var(--mono);
+      padding: 2px 8px;
+      border-radius: 4px;
+    }
+
+    .run-badge.done {
+      background: #14532d;
+      color: var(--green);
+    }
+
+    .run-badge.running {
+      background: #1e3a5f;
+      color: var(--accent2);
+    }
+
+    .run-badge.failed {
+      background: #450a0a;
+      color: var(--red);
+    }
+
+    /* ── Login screen ────────────────────────── */
+    #login-screen {
+      min-height: 80vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      gap: 16px;
+    }
+
+    .login-title {
+      font-size: 2.5rem;
+      font-weight: 800;
+      letter-spacing: -.03em;
+      line-height: 1.1;
+    }
+
+    .login-sub {
+      color: var(--muted);
+      max-width: 400px;
+      font-size: .95rem;
+    }
+
+    .google-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      background: #fff;
+      color: #111;
+      padding: 11px 24px;
+      border-radius: 7px;
+      font-weight: 700;
+      font-size: .875rem;
+      margin-top: 8px;
+      border: none;
+      cursor: pointer;
+      transition: all .15s;
+    }
+
+    .google-btn:hover {
+      background: #e8e8e8;
+      transform: translateY(-1px);
+    }
+
+    /* ── Preset ──────────────────────────────── */
+    .preset-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: .82rem;
+    }
+
+    .preset-row:last-child {
+      border-bottom: none;
+    }
+
+    /* ── Toasts ──────────────────────────────── */
+    #toast {
+      position: fixed;
+      bottom: 28px;
+      right: 28px;
+      background: var(--surface);
+      border: 1px solid var(--border2);
+      border-radius: 8px;
+      padding: 12px 20px;
+      font-size: .82rem;
+      font-family: var(--mono);
+      opacity: 0;
+      transform: translateY(10px);
+      transition: all .25s;
+      pointer-events: none;
+      z-index: 999;
+    }
+
+    #toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    #toast.err {
+      border-color: var(--red);
+      color: var(--red);
+    }
+
+    #toast.ok {
+      border-color: var(--green);
+      color: var(--green);
+    }
+  </style>
+</head>
+
+<body>
+
+  <div id="toast"></div>
+
+  <!-- ══ Login ══════════════════════════════════════════════════════════════ -->
+  <div id="login-screen" class="hidden">
+    <p class="muted mono" style="font-size:.8rem;letter-spacing:.1em">JOB SEARCH AGENT</p>
+    <h1 class="login-title">Find your next<br><span style="color:var(--accent)">AI role</span> — fast.</h1>
+    <p class="login-sub">Searches JSearch + Adzuna in parallel, scores every listing against your CV using Claude,
+      exports to Excel.</p>
+    <button class="google-btn" id="google-login-btn">
+      <svg width="18" height="18" viewBox="0 0 48 48">
+        <path fill="#4285F4"
+          d="M45.5 24.5c0-1.6-.1-3.1-.4-4.5H24v8.5h12.1c-.5 2.7-2.1 5-4.5 6.5v5.4h7.3c4.3-3.9 6.6-9.7 6.6-15.9z" />
+        <path fill="#34A853"
+          d="M24 46c6.1 0 11.2-2 14.9-5.5l-7.3-5.4c-2 1.3-4.5 2.1-7.6 2.1-5.9 0-10.8-3.9-12.6-9.2H4v5.6C7.7 41.3 15.3 46 24 46z" />
+        <path fill="#FBBC05"
+          d="M11.4 28c-.5-1.3-.7-2.7-.7-4s.3-2.7.7-4v-5.6H4C2.4 17.6 2 20.7 2 24s.4 6.4 2 9.6l7.4-5.6z" />
+        <path fill="#EA4335"
+          d="M24 10.8c3.3 0 6.3 1.1 8.6 3.3l6.4-6.4C34.9 3.8 29.9 2 24 2 15.3 2 7.7 6.7 4 14.4l7.4 5.6C13.2 14.7 18.1 10.8 24 10.8z" />
+      </svg>
+      Continue with Google
+    </button>
+  </div>
+
+  <!-- ══ Main App ════════════════════════════════════════════════════════════ -->
+  <div id="main-app" class="hidden">
+    <div id="app">
+      <header>
+        <div class="logo">job<span>.</span>agent</div>
+        <div id="user-pill">
+          <span id="user-email" class="mono"></span>
+          <button class="btn-ghost" id="logout-btn">sign out</button>
+        </div>
+      </header>
+
+      <!-- ── Profile setup (shown if no CV) ─────────────────────────────── -->
+      <div id="setup-section" class="hidden">
+        <div class="card">
+          <div class="card-title"><span class="dot"></span> Profile Setup</div>
+
+          <div class="field">
+            <label>Your CV / Resume (PDF)</label>
+            <input type="file" id="cv-upload" accept=".pdf" style="padding:6px">
+            <div id="cv-status" class="muted mono" style="font-size:.75rem;margin-top:6px"></div>
+          </div>
+
+          <div style="height:18px"></div>
+
+          <div class="card-title" style="margin-bottom:14px"><span class="dot" style="background:var(--amber)"></span>
+            API Keys</div>
+          <p class="muted" style="font-size:.8rem;margin-bottom:16px">Keys are encrypted with Google KMS before being
+            stored. We never see them in plaintext.</p>
+
+          <div class="grid2">
+            <div class="field">
+              <label>JSearch (RapidAPI) Key</label>
+              <input type="password" id="jsearch-key" placeholder="••••••••••••">
+            </div>
+            <div class="field">
+              <label>Gemini API Key <span style="color:var(--red)">*</span></label>
+              <input type="password" id="gemini-key" placeholder="AIza••••••">
+            </div>
+            <div class="field">
+              <label>Adzuna App ID</label>
+              <input type="text" id="adzuna-app-id" placeholder="app ID">
+            </div>
+            <div class="field">
+              <label>Adzuna API Key</label>
+              <input type="password" id="adzuna-api-key" placeholder="••••••••••••">
+            </div>
+          </div>
+
+          <button class="btn-primary" id="save-setup-btn" style="margin-top:8px">Save Profile</button>
+        </div>
+      </div>
+
+      <!-- ── Run Search ──────────────────────────────────────────────────── -->
+      <div id="run-section">
+        <div class="card">
+          <div class="card-title"><span class="dot"></span> New Search</div>
+
+          <div class="field">
+            <label>Keywords</label>
+            <div class="tag-wrap" id="kw-wrap">
+              <input class="tag-input" id="kw-input" placeholder="type keyword, press Enter…">
+            </div>
+            <div class="tag-hint">e.g. ML Engineer · LLM Engineer · AI Engineer</div>
+          </div>
+
+          <div class="field">
+            <label>Countries</label>
+            <div class="pill-group" id="country-group">
+              <button class="pill" data-val="India">India</button>
+              <button class="pill" data-val="UK">UK</button>
+              <button class="pill" data-val="Germany">Germany</button>
+              <button class="pill" data-val="Singapore">Singapore</button>
+              <button class="pill" data-val="Australia">Australia</button>
+              <button class="pill" data-val="Canada">Canada</button>
+              <button class="pill" data-val="United States">USA</button>
+              <button class="pill" data-val="Remote">Remote</button>
+            </div>
+          </div>
+
+          <!-- Advanced filters -->
+          <button class="collapsible-trigger" id="adv-toggle">
+            <span class="arrow">▶</span> Advanced Filters
+          </button>
+          <div class="collapsible-body" id="adv-body">
+            <div class="grid2">
+              <div class="field">
+                <label>Model</label>
+                <select id="model-select">
+                  <option value="haiku">Haiku (fast + cheap)</option>
+                  <option value="sonnet">Sonnet (better quality)</option>
+                </select>
+              </div>
+              <div class="field">
+                <label>Posted Within</label>
+                <select id="posted-days">
+                  <option value="1">24 hours</option>
+                  <option value="3">3 days</option>
+                  <option value="7" selected>7 days</option>
+                  <option value="30">30 days</option>
+                </select>
+              </div>
+              <div class="field">
+                <label>Min Score Threshold</label>
+                <input type="number" id="min-score" value="40" min="0" max="100">
+              </div>
+              <div class="field">
+                <label>Max Results / API / Keyword</label>
+                <input type="number" id="max-results" value="20" min="5" max="50">
+              </div>
+            </div>
+
+            <div class="field">
+              <label>Job Type</label>
+              <div class="pill-group" id="jtype-group">
+                <button class="pill" data-val="Full-time">Full-time</button>
+                <button class="pill" data-val="Part-time">Part-time</button>
+                <button class="pill" data-val="Contract">Contract</button>
+              </div>
+            </div>
+
+            <div class="field" style="margin-top:12px">
+              <label>Work Mode</label>
+              <div class="pill-group" id="wmode-group">
+                <button class="pill" data-val="Remote">Remote</button>
+                <button class="pill" data-val="Hybrid">Hybrid</button>
+                <button class="pill" data-val="Onsite">Onsite</button>
+              </div>
+            </div>
+
+            <div style="margin-top:18px; display:flex; gap:10px; align-items:center">
+              <input type="text" id="preset-name" placeholder="Preset name…" style="max-width:220px">
+              <button class="btn-ghost" id="save-preset-btn">Save as Preset</button>
+            </div>
+
+            <div id="presets-list" style="margin-top:14px"></div>
+          </div>
+
+          <div style="margin-top:22px; display:flex; align-items:center; gap:12px">
+            <button class="btn-primary" id="run-btn">▶ Run Search</button>
+            <span class="muted mono" style="font-size:.75rem" id="run-hint"></span>
+          </div>
+        </div>
+
+        <!-- Status -->
+        <div id="status-bar" class="hidden">
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <span class="mono" id="status-text" style="font-size:.85rem">Starting…</span>
+            <span class="muted mono" style="font-size:.72rem" id="run-id-label"></span>
+          </div>
+          <div class="status-steps">
+            <div class="step" id="step-fetching">Fetching</div>
+            <div class="step" id="step-deduplicating">Deduplicating</div>
+            <div class="step" id="step-scoring">Scoring</div>
+            <div class="step" id="step-exporting">Exporting</div>
+            <div class="step" id="step-done">Done</div>
+          </div>
+        </div>
+
+        <!-- Results -->
+        <div id="result-section" class="hidden">
+          <div class="stats-row" id="stats-row"></div>
+          <a href="#" id="download-link" class="download-btn" target="_blank">
+            ↓ Download Excel
+          </a>
+        </div>
+      </div>
+
+      <!-- ── Past Runs ───────────────────────────────────────────────────── -->
+      <div class="card" style="margin-top:28px" id="history-card">
+        <div class="card-title"><span class="dot" style="background:var(--muted)"></span> Past Runs</div>
+        <div id="runs-list"><span class="muted mono" style="font-size:.8rem">No runs yet.</span></div>
+      </div>
+
+      <!-- ── CV & Keys (in menu for returning users) ─────────────────────── -->
+      <div class="card" style="margin-top:8px">
+        <button class="collapsible-trigger" id="profile-toggle">
+          <span class="arrow">▶</span> Update CV / API Keys
+        </button>
+        <div class="collapsible-body" id="profile-body">
+          <div class="field" style="margin-top:4px">
+            <label>CV / Resume (PDF)</label>
+            <input type="file" id="cv-upload2" accept=".pdf" style="padding:6px">
+            <div id="cv-status2" class="muted mono" style="font-size:.75rem;margin-top:6px"></div>
+          </div>
+          <div class="grid2" style="margin-top:10px">
+            <div class="field">
+              <label>JSearch Key</label>
+              <input type="password" id="jsearch-key2" placeholder="••••••••••••">
+            </div>
+            <div class="field">
+              <label>Gemini Key</label>
+              <input type="password" id="gemini-key2" placeholder="AIza••••••">
+            </div>
+            <div class="field">
+              <label>Adzuna App ID</label>
+              <input type="text" id="adzuna-app-id2">
+            </div>
+            <div class="field">
+              <label>Adzuna API Key</label>
+              <input type="password" id="adzuna-api-key2">
+            </div>
+          </div>
+          <button class="btn-primary" id="save-keys2-btn" style="margin-top:8px">Save Changes</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ══ State ════════════════════════════════════════════════════════════════
+    const state = {
+      user: null,
+      keywords: [],
+      countries: [],
+      jtypes: [],
+      wmodes: [],
+      activeRunId: null,
+      pollTimer: null,
+    };
+
+    // ══ API ══════════════════════════════════════════════════════════════════
+    async function api(method, path, body) {
+      const opts = { method, credentials: 'include', headers: {} };
+      if (body) { opts.headers['Content-Type'] = 'application/json'; opts.body = JSON.stringify(body); }
+      const r = await fetch(path, opts);
+      if (!r.ok) {
+        const err = await r.json().catch(() => ({ detail: r.statusText }));
+        throw new Error(err.detail || r.statusText);
+      }
+      return r.json();
+    }
+
+    // ══ Toast ════════════════════════════════════════════════════════════════
+    let toastTimer;
+    function toast(msg, type = 'ok') {
+      const el = document.getElementById('toast');
+      el.textContent = msg;
+      el.className = `show ${type}`;
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => { el.className = ''; }, 3200);
+    }
+
+    // ══ Boot ═════════════════════════════════════════════════════════════════
+    async function boot() {
+      try {
+        const me = await api('GET', '/me');
+        state.user = me;
+        showMain(me);
+      } catch {
+        showLogin();
+      }
+    }
+
+    function showLogin() {
+      document.getElementById('login-screen').classList.remove('hidden');
+      document.getElementById('main-app').classList.add('hidden');
+    }
+
+    function showMain(me) {
+      document.getElementById('login-screen').classList.add('hidden');
+      document.getElementById('main-app').classList.remove('hidden');
+      document.getElementById('user-email').textContent = me.email;
+      if (!me.has_cv) {
+        document.getElementById('setup-section').classList.remove('hidden');
+      }
+      loadRuns();
+      loadPresets();
+    }
+
+    // ══ Login ════════════════════════════════════════════════════════════════
+    document.getElementById('google-login-btn').addEventListener('click', async () => {
+      const data = await api('GET', '/auth/google');
+      window.location.href = data.url;
+    });
+
+    // Handle OAuth callback
+    const params = new URLSearchParams(window.location.search);
+    if (params.has('code')) {
+      api('GET', `/auth/google/callback?code=${params.get('code')}&state=${params.get('state') || ''}`)
+        .then(() => { window.history.replaceState({}, '', '/'); boot(); })
+        .catch(e => { toast(e.message, 'err'); showLogin(); });
+    } else {
+      boot();
+    }
+
+    document.getElementById('logout-btn').addEventListener('click', async () => {
+      await api('POST', '/auth/logout').catch(() => { });
+      showLogin();
+    });
+
+    // ══ Tag input (keywords) ══════════════════════════════════════════════════
+    const kwInput = document.getElementById('kw-input');
+    const kwWrap = document.getElementById('kw-wrap');
+
+    kwInput.addEventListener('keydown', e => {
+      if ((e.key === 'Enter' || e.key === ',') && kwInput.value.trim()) {
+        e.preventDefault();
+        addKeyword(kwInput.value.trim().replace(/,$/, ''));
+        kwInput.value = '';
+      }
+    });
+    kwWrap.addEventListener('click', () => kwInput.focus());
+
+    function addKeyword(kw) {
+      if (state.keywords.includes(kw) || state.keywords.length >= 5) return;
+      state.keywords.push(kw);
+      renderKeywords();
+    }
+
+    function renderKeywords() {
+      kwWrap.querySelectorAll('.tag').forEach(t => t.remove());
+      state.keywords.forEach((kw, i) => {
+        const tag = document.createElement('div');
+        tag.className = 'tag';
+        tag.innerHTML = `${kw}<button onclick="removeKw(${i})">✕</button>`;
+        kwWrap.insertBefore(tag, kwInput);
+      });
+    }
+
+    window.removeKw = function (i) {
+      state.keywords.splice(i, 1);
+      renderKeywords();
+    };
+
+    // ══ Pill groups ═══════════════════════════════════════════════════════════
+    function initPillGroup(groupId, stateKey) {
+      document.getElementById(groupId).addEventListener('click', e => {
+        const pill = e.target.closest('.pill');
+        if (!pill) return;
+        const val = pill.dataset.val;
+        const idx = state[stateKey].indexOf(val);
+        if (idx >= 0) { state[stateKey].splice(idx, 1); pill.classList.remove('active'); }
+        else { state[stateKey].push(val); pill.classList.add('active'); }
+      });
+    }
+
+    initPillGroup('country-group', 'countries');
+    initPillGroup('jtype-group', 'jtypes');
+    initPillGroup('wmode-group', 'wmodes');
+
+    // ══ Collapsibles ══════════════════════════════════════════════════════════
+    function initCollapsible(triggerId, bodyId) {
+      document.getElementById(triggerId).addEventListener('click', function () {
+        this.classList.toggle('open');
+        document.getElementById(bodyId).classList.toggle('open');
+      });
+    }
+    initCollapsible('adv-toggle', 'adv-body');
+    initCollapsible('profile-toggle', 'profile-body');
+
+    // ══ CV Upload ═════════════════════════════════════════════════════════════
+    async function uploadCV(inputId, statusId) {
+      const file = document.getElementById(inputId).files[0];
+      if (!file) return;
+      const fd = new FormData();
+      fd.append('file', file);
+      document.getElementById(statusId).textContent = 'Uploading…';
+      try {
+        const r = await fetch('/me/cv', { method: 'POST', credentials: 'include', body: fd });
+        if (!r.ok) throw new Error((await r.json()).detail);
+        const data = await r.json();
+        document.getElementById(statusId).textContent = `✓ ${data.char_count.toLocaleString()} characters extracted`;
+        toast('CV uploaded', 'ok');
+        state.user.has_cv = true;
+      } catch (e) { toast(e.message, 'err'); }
+    }
+
+    document.getElementById('cv-upload').addEventListener('change', () => uploadCV('cv-upload', 'cv-status'));
+    document.getElementById('cv-upload2').addEventListener('change', () => uploadCV('cv-upload2', 'cv-status2'));
+
+    // ══ Save API keys ═════════════════════════════════════════════════════════
+    async function saveKeys(suffix = '') {
+      const payload = {
+        jsearch_key: document.getElementById(`jsearch-key${suffix}`).value,
+        adzuna_app_id: document.getElementById(`adzuna-app-id${suffix}`).value,
+        adzuna_api_key: document.getElementById(`adzuna-api-key${suffix}`).value,
+        gemini_key: document.getElementById(`gemini-key${suffix}`).value,
+      };
+      try {
+        await api('POST', '/me/api-keys', payload);
+        toast('API keys saved', 'ok');
+      } catch (e) { toast(e.message, 'err'); }
+    }
+
+    document.getElementById('save-setup-btn')?.addEventListener('click', async () => {
+      await saveKeys('');
+      document.getElementById('setup-section').classList.add('hidden');
+    });
+    document.getElementById('save-keys2-btn').addEventListener('click', () => saveKeys('2'));
+
+    // ══ Presets ═══════════════════════════════════════════════════════════════
+    async function loadPresets() {
+      try {
+        const presets = await api('GET', '/me/presets');
+        const el = document.getElementById('presets-list');
+        if (!presets.length) { el.innerHTML = '<span class="muted mono" style="font-size:.78rem">No saved presets.</span>'; return; }
+        el.innerHTML = presets.map(p => `
+      <div class="preset-row">
+        <span class="mono" style="font-size:.82rem">${p.preset_name}</span>
+        <div style="display:flex;gap:8px">
+          <button class="btn-ghost" style="font-size:.72rem;padding:4px 10px" onclick="loadPreset('${p.id}')">Load</button>
+          <button class="btn-ghost" style="font-size:.72rem;padding:4px 10px;color:var(--red)" onclick="deletePreset('${p.id}')">Delete</button>
+        </div>
+      </div>
+    `).join('');
+        el._data = presets;
+      } catch { }
+    }
+
+    document.getElementById('save-preset-btn').addEventListener('click', async () => {
+      const name = document.getElementById('preset-name').value.trim();
+      if (!name) { toast('Enter a preset name', 'err'); return; }
+      const payload = {
+        preset_name: name,
+        keywords: state.keywords,
+        countries: state.countries,
+        job_types: state.jtypes,
+        work_modes: state.wmodes,
+        posted_within_days: +document.getElementById('posted-days').value,
+        min_score: +document.getElementById('min-score').value,
+        max_results: +document.getElementById('max-results').value,
+      };
+      try { await api('POST', '/me/presets', payload); toast('Preset saved', 'ok'); loadPresets(); }
+      catch (e) { toast(e.message, 'err'); }
+    });
+
+    window.loadPreset = function (id) {
+      const el = document.getElementById('presets-list');
+      const preset = el._data?.find(p => p.id === id);
+      if (!preset) return;
+      state.keywords = preset.keywords || [];
+      renderKeywords();
+      state.countries = preset.countries || [];
+      document.querySelectorAll('#country-group .pill').forEach(p => {
+        p.classList.toggle('active', state.countries.includes(p.dataset.val));
+      });
+      if (preset.job_types) {
+        state.jtypes = preset.job_types;
+        document.querySelectorAll('#jtype-group .pill').forEach(p => {
+          p.classList.toggle('active', state.jtypes.includes(p.dataset.val));
+        });
+      }
+      if (preset.work_modes) {
+        state.wmodes = preset.work_modes;
+        document.querySelectorAll('#wmode-group .pill').forEach(p => {
+          p.classList.toggle('active', state.wmodes.includes(p.dataset.val));
+        });
+      }
+      document.getElementById('min-score').value = preset.min_score ?? 40;
+      document.getElementById('max-results').value = preset.max_results ?? 20;
+      document.getElementById('posted-days').value = preset.posted_within_days ?? 7;
+      toast(`Loaded "${preset.preset_name}"`, 'ok');
+    };
+
+    window.deletePreset = async function (id) {
+      try { await api('DELETE', `/me/presets/${id}`); toast('Deleted', 'ok'); loadPresets(); }
+      catch (e) { toast(e.message, 'err'); }
+    };
+
+    // ══ Run ═══════════════════════════════════════════════════════════════════
+    document.getElementById('run-btn').addEventListener('click', async () => {
+      if (!state.keywords.length) { toast('Add at least one keyword', 'err'); return; }
+      if (!state.countries.length) { toast('Select at least one country', 'err'); return; }
+
+      document.getElementById('run-btn').disabled = true;
+      document.getElementById('result-section').classList.add('hidden');
+
+      const payload = {
+        keywords: state.keywords,
+        countries: state.countries,
+        model: document.getElementById('model-select').value,
+        job_types: state.jtypes.length ? state.jtypes : null,
+        work_modes: state.wmodes.length ? state.wmodes : null,
+        posted_within_days: +document.getElementById('posted-days').value,
+        min_score: +document.getElementById('min-score').value,
+        max_results: +document.getElementById('max-results').value,
+      };
+
+      try {
+        const run = await api('POST', '/run', payload);
+        state.activeRunId = run.run_id;
+        showStatus(run.run_id);
+        startPolling(run.run_id);
+      } catch (e) {
+        toast(e.message, 'err');
+        document.getElementById('run-btn').disabled = false;
+      }
+    });
+
+    function showStatus(runId) {
+      const bar = document.getElementById('status-bar');
+      bar.classList.remove('hidden');
+      document.getElementById('run-id-label').textContent = `run/${runId}`;
+      setStep('fetching');
+    }
+
+    function setStep(stepName) {
+      const steps = ['fetching', 'deduplicating', 'scoring', 'exporting', 'done'];
+      const idx = steps.indexOf(stepName);
+      steps.forEach((s, i) => {
+        const el = document.getElementById(`step-${s}`);
+        if (!el) return;
+        el.className = 'step' + (i < idx ? ' done' : i === idx ? ' active' : '');
+      });
+      document.getElementById('status-text').textContent = {
+        fetching: 'Fetching jobs from APIs…',
+        deduplicating: 'Deduplicating results…',
+        scoring: 'Scoring with Claude…',
+        exporting: 'Building Excel + uploading…',
+        done: '✓ Done!',
+        failed: '✗ Run failed',
+      }[stepName] || stepName;
+    }
+
+    function startPolling(runId) {
+      clearInterval(state.pollTimer);
+      state.pollTimer = setInterval(async () => {
+        try {
+          const run = await api('GET', `/run/${runId}/status`);
+          setStep(run.status);
+          if (run.status === 'done') {
+            clearInterval(state.pollTimer);
+            showResult(run);
+            document.getElementById('run-btn').disabled = false;
+            loadRuns();
+          } else if (run.status === 'failed') {
+            clearInterval(state.pollTimer);
+            toast(run.error || 'Run failed', 'err');
+            document.getElementById('run-btn').disabled = false;
+          }
+        } catch { }
+      }, 2500);
+    }
+
+    function showResult(run) {
+      const sec = document.getElementById('result-section');
+      sec.classList.remove('hidden');
+      document.getElementById('stats-row').innerHTML = `
+    <div class="stat"><div class="stat-num">${run.total_raw_jobs ?? '—'}</div><div class="stat-label">Raw Jobs</div></div>
+    <div class="stat"><div class="stat-num">${run.after_dedup ?? '—'}</div><div class="stat-label">After Dedup</div></div>
+    <div class="stat"><div class="stat-num">${run.after_score_filter ?? '—'}</div><div class="stat-label">Passed Scoring</div></div>
+  `;
+      const dl = document.getElementById('download-link');
+      dl.href = `/run/${run.run_id}/download`;
+      dl.onclick = async (e) => {
+        e.preventDefault();
+        try {
+          const data = await api('GET', `/run/${run.run_id}/download`);
+          window.open(data.signed_url, '_blank');
+        } catch (err) { toast(err.message, 'err'); }
+      };
+    }
+
+    // ══ Past runs ═════════════════════════════════════════════════════════════
+    async function loadRuns() {
+      try {
+        const runs = await api('GET', '/runs');
+        const el = document.getElementById('runs-list');
+        if (!runs.length) { el.innerHTML = '<span class="muted mono" style="font-size:.8rem">No runs yet.</span>'; return; }
+        el.innerHTML = runs.map(r => {
+          const date = r.created_at ? new Date(r.created_at._seconds * 1000).toLocaleString() : '';
+          const kw = r.filters_used?.keywords?.join(', ') || '—';
+          return `
+        <div class="run-row">
+          <div>
+            <div class="mono" style="font-size:.8rem">${kw}</div>
+            <div class="muted" style="font-size:.72rem">${date}</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <span class="mono" style="font-size:.75rem">${r.after_score_filter ?? '—'} jobs</span>
+            <span class="run-badge ${r.status}">${r.status}</span>
+            ${r.status === 'done' ? `<button class="btn-ghost" style="font-size:.72rem;padding:4px 10px" onclick="redownload('${r.run_id}')">↓</button>` : ''}
+          </div>
+        </div>
+      `;
+        }).join('');
+      } catch { }
+    }
+
+    window.redownload = async function (runId) {
+      try {
+        const data = await api('GET', `/run/${runId}/download`);
+        window.open(data.signed_url, '_blank');
+      } catch (e) { toast(e.message, 'err'); }
+    };
+  </script>
+</body>
+
+</html>

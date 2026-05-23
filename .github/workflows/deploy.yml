@@ -1,0 +1,137 @@
+name: CI/CD — Build, Test & Deploy to Cloud Run
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+  REGION: ${{ secrets.GCP_REGION }}
+  REPO: ${{ secrets.ARTIFACT_REGISTRY_REPO }}
+  SERVICE: ${{ secrets.CLOUD_RUN_SERVICE_NAME }}
+  IMAGE_NAME: job-search-agent
+
+jobs:
+  # ── 1. Test ────────────────────────────────────────────────────────────────
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Run tests
+        run: pytest tests/ -v --tb=short
+        env:
+          # Tests use mocked GCP / Anthropic — no real keys needed
+          ENV: test
+
+  # ── 2. Build & Push (main branch only) ────────────────────────────────────
+  build-push:
+    name: Build & Push Docker Image
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+
+    permissions:
+      contents: read
+      id-token: write   # required for Workload Identity Federation
+
+    outputs:
+      image: ${{ steps.meta.outputs.image }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Authenticate to GCP (Workload Identity — no SA key file)
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+
+      - name: Configure Docker for Artifact Registry
+        run: gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev --quiet
+
+      - name: Build image tag
+        id: meta
+        run: |
+          SHA_SHORT=$(git rev-parse --short HEAD)
+          IMAGE="${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO }}/${{ env.IMAGE_NAME }}"
+          echo "image=${IMAGE}:${SHA_SHORT}" >> $GITHUB_OUTPUT
+          echo "image_latest=${IMAGE}:latest" >> $GITHUB_OUTPUT
+
+      - name: Build Docker image
+        run: |
+          docker build \
+            --tag ${{ steps.meta.outputs.image }} \
+            --tag ${{ steps.meta.outputs.image_latest }} \
+            --cache-from ${{ steps.meta.outputs.image_latest }} \
+            --build-arg BUILDKIT_INLINE_CACHE=1 \
+            .
+        env:
+          DOCKER_BUILDKIT: 1
+
+      - name: Push to Artifact Registry
+        run: |
+          docker push ${{ steps.meta.outputs.image }}
+          docker push ${{ steps.meta.outputs.image_latest }}
+
+  # ── 3. Deploy to Cloud Run ─────────────────────────────────────────────────
+  deploy:
+    name: Deploy to Cloud Run
+    runs-on: ubuntu-latest
+    needs: build-push
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+
+      - name: Deploy to Cloud Run
+        uses: google-github-actions/deploy-cloudrun@v2
+        with:
+          service: ${{ env.SERVICE }}
+          region: ${{ env.REGION }}
+          image: ${{ needs.build-push.outputs.image }}
+          flags: |
+            --min-instances=0
+            --max-instances=10
+            --memory=512Mi
+            --timeout=300s
+            --concurrency=80
+            --cpu=1
+            --allow-unauthenticated
+          env_vars: |
+            GCP_PROJECT_ID=${{ secrets.GCP_PROJECT_ID }}
+            GCS_BUCKET_NAME=${{ secrets.GCS_BUCKET_NAME }}
+            KMS_KEY_NAME=${{ secrets.KMS_KEY_NAME }}
+            GOOGLE_OAUTH_CLIENT_ID=${{ secrets.GOOGLE_OAUTH_CLIENT_ID }}
+            GOOGLE_OAUTH_CLIENT_SECRET=${{ secrets.GOOGLE_OAUTH_CLIENT_SECRET }}
+            ENV=production
+
+      - name: Show deployed URL
+        run: |
+          echo "✅ Deployed: $(gcloud run services describe ${{ env.SERVICE }} \
+            --region=${{ env.REGION }} --format='value(status.url)')"
