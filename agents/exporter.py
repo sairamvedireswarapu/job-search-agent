@@ -133,14 +133,13 @@ def build_excel(
     wb.save(buf)
     return buf.getvalue()
 
-
 def upload_to_gcs(
     excel_bytes: bytes,
     run_meta: dict,
 ) -> tuple[str, str]:
     """
     Upload Excel to GCS.
-    Returns (gcs_path, signed_url).
+    Returns (gcs_path, public_url).
     """
     client = storage.Client()
     bucket = client.bucket(settings.GCS_BUCKET_NAME)
@@ -151,17 +150,26 @@ def upload_to_gcs(
 
     blob_name = f"users/{user_id}/{date_str}/run_{run_id}.xlsx"
     blob = bucket.blob(blob_name)
-    blob.upload_from_string(excel_bytes, content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+    blob.upload_from_string(
+        excel_bytes,
+        content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
 
-    # Also save run meta JSON
+    # Save run meta JSON
     meta_blob = bucket.blob(f"users/{user_id}/{date_str}/run_{run_id}_meta.json")
-    meta_blob.upload_from_string(json.dumps(run_meta, default=str), content_type="application/json")
+    meta_blob.upload_from_string(
+        json.dumps(run_meta, default=str),
+        content_type="application/json"
+    )
 
     gcs_path = f"gs://{settings.GCS_BUCKET_NAME}/{blob_name}"
 
-    # Signed URL valid for 15 min
-    expiry = timedelta(minutes=settings.SIGNED_URL_EXPIRY_MINUTES)
-    signed_url = blob.generate_signed_url(expiration=expiry, method="GET", version="v4")
+    # Make blob public — avoids signed URL which needs service account private key
+    try:
+        blob.make_public()
+        public_url = blob.public_url
+    except Exception:
+        public_url = f"https://storage.googleapis.com/{settings.GCS_BUCKET_NAME}/{blob_name}"
 
     logger.info("Exported to %s", gcs_path)
-    return gcs_path, signed_url
+    return gcs_path, public_url

@@ -42,3 +42,8 @@ async def health():
 @app.get("/")
 async def serve_ui():
     return FileResponse("index.html")
+
+@app.get("/api-keys-guide.pdf")
+async def serve_pdf():
+    from fastapi.responses import FileResponse
+    return FileResponse("api-keys-guide.pdf", media_type="application/pdf")

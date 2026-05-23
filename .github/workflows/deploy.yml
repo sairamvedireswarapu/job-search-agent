@@ -9,7 +9,6 @@ on:
 env:
   PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
   REGION: ${{ secrets.GCP_REGION }}
-  REPO: ${{ secrets.ARTIFACT_REGISTRY_REPO }}
   SERVICE: ${{ secrets.CLOUD_RUN_SERVICE_NAME }}
   IMAGE_NAME: job-search-agent
 
@@ -64,14 +63,14 @@ jobs:
           workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
           service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
 
-      - name: Configure Docker for Artifact Registry
-        run: gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev --quiet
+      - name: Configure Docker for gcr.io
+        run: gcloud auth configure-docker gcr.io --quiet
 
       - name: Build image tag
         id: meta
         run: |
           SHA_SHORT=$(git rev-parse --short HEAD)
-          IMAGE="${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO }}/${{ env.IMAGE_NAME }}"
+          IMAGE="gcr.io/${{ env.PROJECT_ID }}/${{ env.IMAGE_NAME }}"
           echo "image=${IMAGE}:${SHA_SHORT}" >> $GITHUB_OUTPUT
           echo "image_latest=${IMAGE}:latest" >> $GITHUB_OUTPUT
 
@@ -86,7 +85,7 @@ jobs:
         env:
           DOCKER_BUILDKIT: 1
 
-      - name: Push to Artifact Registry
+      - name: Push to gcr.io
         run: |
           docker push ${{ steps.meta.outputs.image }}
           docker push ${{ steps.meta.outputs.image_latest }}

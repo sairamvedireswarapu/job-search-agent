@@ -108,10 +108,12 @@ async def run_job_search(
         jobs=clean_jobs,
         cv_text=cv_text,
         keywords=keywords,
-        gemini_key=gemini_key,
+        gemini_key=api_keys.get("gemini_key", ""),
+        grok_key=api_keys.get("grok_key", ""),
+        anthropic_key=api_keys.get("anthropic_key", ""),
         model=model,
         min_score=min_score,
-        )
+    )
     after_score_filter = len(scored_jobs)
         # ── 5. Build run meta ─────────────────────────────────────────────────
     est_cost = _estimate_cost(len(clean_jobs), model)
