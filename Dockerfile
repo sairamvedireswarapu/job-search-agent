@@ -13,8 +13,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # Install Python deps first (better layer caching)
 COPY pyproject.toml .
-RUN pip install --upgrade pip && pip install -e .
-
+RUN pip install --upgrade pip setuptools wheel && pip install -e .
 # Copy source
 COPY . .
 
