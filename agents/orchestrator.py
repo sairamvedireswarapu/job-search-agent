@@ -109,7 +109,7 @@ async def run_job_search(
         cv_text=cv_text,
         keywords=keywords,
         gemini_key=api_keys.get("gemini_key", ""),
-        grok_key=api_keys.get("grok_key", ""),
+        groq_key=api_keys.get("groq_key", ""),
         anthropic_key=api_keys.get("anthropic_key", ""),
         model=model,
         min_score=min_score,
